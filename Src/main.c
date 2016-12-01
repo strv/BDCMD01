@@ -44,7 +44,9 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h>
+#include <stdint.h>
+#include "stm32f3xx_hal.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -72,18 +74,54 @@ void led_off(LED led);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-void led_init(){
 
+GPIO_InitTypeDef GPIO_InitStruct = {
+		0,
+		GPIO_MODE_OUTPUT_PP,
+		GPIO_NOPULL,
+		GPIO_SPEED_FREQ_LOW,
+		0
+};
+
+void led_init(){
+	GPIO_InitStruct.Pin = LED1_Pin;
+	HAL_GPIO_Init(LED1_GPIO_Port, &GPIO_InitStruct);
+	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin , GPIO_PIN_RESET);
+	GPIO_InitStruct.Pin = LED2_Pin;
+	HAL_GPIO_Init(LED2_GPIO_Port, &GPIO_InitStruct);
+	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin , GPIO_PIN_RESET);
+	GPIO_InitStruct.Pin = LED3_Pin;
+	HAL_GPIO_Init(LED3_GPIO_Port, &GPIO_InitStruct);
+	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin , GPIO_PIN_RESET);
 }
 
 void led_on(LED led){
-
+	if(led & LED1){
+		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin , GPIO_PIN_SET);
+	}
+	if(led & LED2){
+		HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin , GPIO_PIN_SET);
+	}
+	if(led & LED3){
+		HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin , GPIO_PIN_SET);
+	}
 }
 
 void led_off(LED led){
-
+	if(led & LED1){
+		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin , GPIO_PIN_RESET);
+	}
+	if(led & LED2){
+		HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin , GPIO_PIN_RESET);
+	}
+	if(led & LED3){
+		HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin , GPIO_PIN_RESET);
+	}
 }
 
+volatile uint32_t tick_last = 0;
+volatile uint32_t tick_now = 0;
+int32_t led_pos = 1;
 /* USER CODE END 0 */
 
 int main(void)
@@ -123,7 +161,7 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   led_init();
-
+  led_on(LED1 | LED2 | LED3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -133,6 +171,16 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
+	  tick_now = HAL_GetTick();
+	  if(tick_now - tick_last >= 200){
+		  led_on(led_pos);
+		  led_off(~led_pos);
+		  led_pos <<= 1;
+		  if(led_pos > LED3){
+			  led_pos = LED1;
+		  }
+		  tick_last += 200;
+	  }
 
   }
   /* USER CODE END 3 */
