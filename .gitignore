@@ -4,4 +4,6 @@ Debug/
 *.bak
 *.log
 *.lck
+*.txt
+*.pdf
 .code_review_properties
