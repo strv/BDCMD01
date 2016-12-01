@@ -1,0 +1,7 @@
+Debug/
+.settings/
+*.launch
+*.bak
+*.log
+*.lck
+.code_review_properties
