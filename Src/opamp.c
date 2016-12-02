@@ -54,7 +54,9 @@ void MX_OPAMP2_Init(void)
   hopamp2.Init.NonInvertingInput = OPAMP_NONINVERTINGINPUT_IO0;
   hopamp2.Init.InvertingInput = OPAMP_INVERTINGINPUT_IO0;
   hopamp2.Init.TimerControlledMuxmode = OPAMP_TIMERCONTROLLEDMUXMODE_DISABLE;
-  hopamp2.Init.UserTrimming = OPAMP_TRIMMING_FACTORY;
+  hopamp2.Init.UserTrimming = OPAMP_TRIMMING_USER;
+  hopamp2.Init.TrimmingValueP = 0;
+  hopamp2.Init.TrimmingValueN = 0;
   if (HAL_OPAMP_Init(&hopamp2) != HAL_OK)
   {
     Error_Handler();
@@ -70,7 +72,9 @@ void MX_OPAMP3_Init(void)
   hopamp3.Init.NonInvertingInput = OPAMP_NONINVERTINGINPUT_IO0;
   hopamp3.Init.InvertingInput = OPAMP_INVERTINGINPUT_IO1;
   hopamp3.Init.TimerControlledMuxmode = OPAMP_TIMERCONTROLLEDMUXMODE_DISABLE;
-  hopamp3.Init.UserTrimming = OPAMP_TRIMMING_FACTORY;
+  hopamp3.Init.UserTrimming = OPAMP_TRIMMING_USER;
+  hopamp3.Init.TrimmingValueP = 0;
+  hopamp3.Init.TrimmingValueN = 0;
   if (HAL_OPAMP_Init(&hopamp3) != HAL_OK)
   {
     Error_Handler();
@@ -85,7 +89,9 @@ void MX_OPAMP4_Init(void)
   hopamp4.Init.Mode = OPAMP_FOLLOWER_MODE;
   hopamp4.Init.NonInvertingInput = OPAMP_NONINVERTINGINPUT_IO3;
   hopamp4.Init.TimerControlledMuxmode = OPAMP_TIMERCONTROLLEDMUXMODE_DISABLE;
-  hopamp4.Init.UserTrimming = OPAMP_TRIMMING_FACTORY;
+  hopamp4.Init.UserTrimming = OPAMP_TRIMMING_USER;
+  hopamp4.Init.TrimmingValueP = 0;
+  hopamp4.Init.TrimmingValueN = 0;
   if (HAL_OPAMP_Init(&hopamp4) != HAL_OK)
   {
     Error_Handler();
@@ -221,6 +227,19 @@ void HAL_OPAMP_MspDeInit(OPAMP_HandleTypeDef* opampHandle)
 } 
 
 /* USER CODE BEGIN 1 */
+HAL_StatusTypeDef opa_start_cal(void){
+	if(HAL_OK != HAL_OPAMP_SelfCalibrate(&hopamp2)){
+		return HAL_ERROR;
+	}
+	if(HAL_OK != HAL_OPAMP_SelfCalibrate(&hopamp3)){
+		return HAL_ERROR;
+	}
+	if(HAL_OK != HAL_OPAMP_SelfCalibrate(&hopamp4)){
+		return HAL_ERROR;
+	}
+	return HAL_OK;
+}
+
 void opa_start(void){
 	HAL_OPAMP_Start(&hopamp2);
 	HAL_OPAMP_Start(&hopamp3);

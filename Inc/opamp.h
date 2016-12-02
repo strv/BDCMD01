@@ -61,6 +61,7 @@ void MX_OPAMP3_Init(void);
 void MX_OPAMP4_Init(void);
 
 /* USER CODE BEGIN Prototypes */
+HAL_StatusTypeDef opa_start_cal(void);
 void opa_start(void);
 /* USER CODE END Prototypes */
 
