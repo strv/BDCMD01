@@ -68,15 +68,6 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN 0 */
 
-GPIO_InitTypeDef GPIO_InitStruct = {
-		0,
-		GPIO_MODE_OUTPUT_PP,
-		GPIO_NOPULL,
-		GPIO_SPEED_FREQ_LOW,
-		0
-};
-
-
 volatile uint32_t tick_last = 0;
 volatile uint32_t tick_now = 0;
 int32_t led_pos = 1;
@@ -121,6 +112,10 @@ int main(void)
   led_init();
   uu_init();
   xprintf("Build: %s %s\r\n",__DATE__,__TIME__);
+
+  opa_start();
+  adc_start_cal();
+  adc_start();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -138,7 +133,9 @@ int main(void)
 		  if(led_pos > LED3){
 			  led_pos = LED1;
 		  }
-		  xprintf("Tick:%6d\r\n",tick_now);
+		  //xprintf("Tick:%6d\r\n",tick_now);
+		  xprintf("VB :%4d CUR1:%4d CUR2:%4d TEMP:%4d \r\n", adc_get(ADC_VB), adc_get(ADC_CUR1), adc_get(ADC_CUR2), adc_get(ADC_TEMP));
+		  xprintf("REF:%4d REF :%4d REF :%4d REF :%4d \r\n", adc_get(ADC_REF4), adc_get(ADC_REF3), adc_get(ADC_REF2), adc_get(ADC_REF1));
 		  tick_last += 200;
 	  }
 
