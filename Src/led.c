@@ -9,6 +9,14 @@
 #include "stm32f3xx_hal.h"
 #include "gpio.h"
 
+GPIO_InitTypeDef GPIO_InitStruct = {
+		0,
+		GPIO_MODE_OUTPUT_PP,
+		GPIO_NOPULL,
+		GPIO_SPEED_FREQ_LOW,
+		0
+};
+
 void led_init(){
 	GPIO_InitStruct.Pin = LED1_Pin;
 	HAL_GPIO_Init(LED1_GPIO_Port, &GPIO_InitStruct);
