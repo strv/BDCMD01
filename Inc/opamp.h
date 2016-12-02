@@ -61,7 +61,7 @@ void MX_OPAMP3_Init(void);
 void MX_OPAMP4_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+void opa_start(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
