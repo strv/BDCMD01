@@ -47,6 +47,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "stm32f3xx_hal.h"
+#include "uart_util.h"
+
+#include "xprintf.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -161,7 +164,8 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   led_init();
-  led_on(LED1 | LED2 | LED3);
+  uu_init();
+  xprintf("Build: %s %s\r\n",__DATE__,__TIME__);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -179,6 +183,7 @@ int main(void)
 		  if(led_pos > LED3){
 			  led_pos = LED1;
 		  }
+		  xprintf("Tick:%6d\r\n",tick_now);
 		  tick_last += 200;
 	  }
 
