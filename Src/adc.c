@@ -474,15 +474,27 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 } 
 
 /* USER CODE BEGIN 1 */
-void adc_start_cal(void){
-	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
+HAL_StatusTypeDef adc_start_cal(void){
+	if(HAL_OK != HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED)){
+		return HAL_ERROR;
+	}
 	while( HAL_IS_BIT_SET( HAL_ADC_GetState(&hadc1), HAL_ADC_STATE_BUSY_INTERNAL ) );
-	HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED);
+
+	if(HAL_OK != HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED)){
+		return HAL_ERROR;
+	}
 	while( HAL_IS_BIT_SET( HAL_ADC_GetState(&hadc2), HAL_ADC_STATE_BUSY_INTERNAL ) );
-	HAL_ADCEx_Calibration_Start(&hadc3, ADC_SINGLE_ENDED);
+
+	if(HAL_OK != HAL_ADCEx_Calibration_Start(&hadc3, ADC_SINGLE_ENDED)){
+		return HAL_ERROR;
+	}
 	while( HAL_IS_BIT_SET( HAL_ADC_GetState(&hadc3), HAL_ADC_STATE_BUSY_INTERNAL ) );
-	HAL_ADCEx_Calibration_Start(&hadc4, ADC_SINGLE_ENDED);
+
+	if(HAL_OK != HAL_ADCEx_Calibration_Start(&hadc4, ADC_SINGLE_ENDED)){
+		return HAL_ERROR;
+	}
 	while( HAL_IS_BIT_SET( HAL_ADC_GetState(&hadc4), HAL_ADC_STATE_BUSY_INTERNAL ) );
+	return HAL_OK;
 }
 
 void adc_start(void){

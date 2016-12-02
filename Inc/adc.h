@@ -80,7 +80,7 @@ void MX_ADC3_Init(void);
 void MX_ADC4_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-void adc_start_cal(void);
+HAL_StatusTypeDef adc_start_cal(void);
 void adc_start(void);
 uint32_t adc_get(ADC_CH ch);
 /* USER CODE END Prototypes */
