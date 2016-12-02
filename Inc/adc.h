@@ -43,7 +43,7 @@
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
-
+#include <stdint.h>
 /* USER CODE END Includes */
 
 extern ADC_HandleTypeDef hadc1;
@@ -52,7 +52,24 @@ extern ADC_HandleTypeDef hadc3;
 extern ADC_HandleTypeDef hadc4;
 
 /* USER CODE BEGIN Private defines */
+#define ADC_BUF_LEN (64)
+#define ADC1_CH_NUM	(2)
+#define ADC2_CH_NUM	(2)
+#define ADC3_CH_NUM	(2)
+#define ADC4_CH_NUM	(2)
+#define ADC_Q (0)
 
+typedef enum{
+	ADC_TEMP,
+	ADC_CUR1,
+	ADC_CUR2,
+	ADC_VB,
+	ADC_REF1,
+	ADC_REF2,
+	ADC_REF3,
+	ADC_REF4,
+	ADC_MAX
+}ADC_CH;
 /* USER CODE END Private defines */
 
 extern void Error_Handler(void);
@@ -63,7 +80,9 @@ void MX_ADC3_Init(void);
 void MX_ADC4_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+void adc_start_cal(void);
+void adc_start(void);
+uint32_t adc_get(ADC_CH ch);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
