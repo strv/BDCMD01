@@ -130,6 +130,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  HAL_GPIO_WritePin(MD_EN1_GPIO_Port, MD_EN1_Pin , GPIO_PIN_SET);
+  HAL_GPIO_WritePin(MD_EN2_GPIO_Port, MD_EN2_Pin , GPIO_PIN_SET);
   while (1)
   {
   /* USER CODE END WHILE */
