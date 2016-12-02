@@ -51,12 +51,12 @@
 #define LED2_GPIO_Port GPIOC
 #define LED1_Pin GPIO_PIN_15
 #define LED1_GPIO_Port GPIOC
-#define MD_EN1_Pin GPIO_PIN_8
-#define MD_EN1_GPIO_Port GPIOC
+#define MD_EN2_Pin GPIO_PIN_8
+#define MD_EN2_GPIO_Port GPIOC
 #define SPI_CS_Pin GPIO_PIN_15
 #define SPI_CS_GPIO_Port GPIOA
-#define MD_EN2_Pin GPIO_PIN_3
-#define MD_EN2_GPIO_Port GPIOB
+#define MD_EN1_Pin GPIO_PIN_3
+#define MD_EN1_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
