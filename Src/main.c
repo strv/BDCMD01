@@ -113,8 +113,18 @@ int main(void)
   uu_init();
   xprintf("Build: %s %s\r\n",__DATE__,__TIME__);
 
+  if(HAL_OK == opa_start_cal()){
+	  xprintf("OP amp calibration success.\r\n");
+  }else{
+	  xprintf("OP amp calibration fail.\r\n");
+  }
   opa_start();
-  adc_start_cal();
+
+  if(HAL_OK == adc_start_cal()){
+	  xprintf("ADC calibration success.\r\n");
+  }else{
+	  xprintf("ADC calibration fail.\r\n");
+  }
   adc_start();
   /* USER CODE END 2 */
 
