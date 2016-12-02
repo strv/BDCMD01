@@ -46,9 +46,8 @@
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
 #include <stdint.h>
-#include "stm32f3xx_hal.h"
+#include "led.h"
 #include "uart_util.h"
-
 #include "xprintf.h"
 /* USER CODE END Includes */
 
@@ -65,15 +64,6 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-typedef enum{
-	LED1 = 1 << 0,
-	LED2 = 1 << 1,
-	LED3 = 1 << 2,
-	LED_MAX
-}LED;
-void led_init();
-void led_on(LED led);
-void led_off(LED led);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -86,41 +76,6 @@ GPIO_InitTypeDef GPIO_InitStruct = {
 		0
 };
 
-void led_init(){
-	GPIO_InitStruct.Pin = LED1_Pin;
-	HAL_GPIO_Init(LED1_GPIO_Port, &GPIO_InitStruct);
-	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin , GPIO_PIN_RESET);
-	GPIO_InitStruct.Pin = LED2_Pin;
-	HAL_GPIO_Init(LED2_GPIO_Port, &GPIO_InitStruct);
-	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin , GPIO_PIN_RESET);
-	GPIO_InitStruct.Pin = LED3_Pin;
-	HAL_GPIO_Init(LED3_GPIO_Port, &GPIO_InitStruct);
-	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin , GPIO_PIN_RESET);
-}
-
-void led_on(LED led){
-	if(led & LED1){
-		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin , GPIO_PIN_SET);
-	}
-	if(led & LED2){
-		HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin , GPIO_PIN_SET);
-	}
-	if(led & LED3){
-		HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin , GPIO_PIN_SET);
-	}
-}
-
-void led_off(LED led){
-	if(led & LED1){
-		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin , GPIO_PIN_RESET);
-	}
-	if(led & LED2){
-		HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin , GPIO_PIN_RESET);
-	}
-	if(led & LED3){
-		HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin , GPIO_PIN_RESET);
-	}
-}
 
 volatile uint32_t tick_last = 0;
 volatile uint32_t tick_now = 0;
