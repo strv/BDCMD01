@@ -10,12 +10,14 @@
 #include "adc.h"
 #include "gpio.h"
 
-#define setCCR_1A(val) TIM8->CCR2 = val
-#define setCCR_1B(val) TIM8->CCR3 = val
-#define setCCR_2A(val) TIM1->CCR2 = val
-#define setCCR_2B(val) TIM1->CCR3 = val
+#define setCCR_1A(val) PWM1_TIM->CCR2 = val
+#define setCCR_1B(val) PWM1_TIM->CCR3 = val
+#define setCCR_2A(val) PWM2_TIM->CCR2 = val
+#define setCCR_2B(val) PWM2_TIM->CCR3 = val
 
 void pwm_enable(void){
+	pwm_set_duty(PWM1, 0);
+	pwm_set_duty(PWM2, 0);
 	tim_start();
 	HAL_GPIO_WritePin(MD_EN1_GPIO_Port, MD_EN1_Pin , GPIO_PIN_SET);
 	HAL_GPIO_WritePin(MD_EN2_GPIO_Port, MD_EN2_Pin , GPIO_PIN_SET);
