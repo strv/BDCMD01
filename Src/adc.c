@@ -524,14 +524,14 @@ uint32_t adc_get(ADC_CH ch){
 		tick = ADC1_CH_NUM;
 		break;
 
-	case ADC_CUR1:
+	case ADC_CUR2:
 		i_end = ADC_BUF_LEN * ADC3_CH_NUM;
 		p_buf = adc3;
 		offset = 0;
 		tick = ADC3_CH_NUM;
 		break;
 
-	case ADC_CUR2:
+	case ADC_CUR1:
 		i_end = ADC_BUF_LEN * ADC2_CH_NUM;
 		p_buf = adc2;
 		offset = 0;
