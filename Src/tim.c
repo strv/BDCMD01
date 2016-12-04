@@ -124,15 +124,24 @@ void MX_TIM1_Init(void)
 /* TIM3 init function */
 void MX_TIM3_Init(void)
 {
+  TIM_Encoder_InitTypeDef sConfig;
   TIM_MasterConfigTypeDef sMasterConfig;
-  TIM_IC_InitTypeDef sConfigIC;
 
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 0;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  if (HAL_TIM_IC_Init(&htim3) != HAL_OK)
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC1Filter = 0;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC2Filter = 0;
+  if (HAL_TIM_Encoder_Init(&htim3, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }
@@ -144,33 +153,28 @@ void MX_TIM3_Init(void)
     Error_Handler();
   }
 
-  sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
-  sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
-  sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
-  sConfigIC.ICFilter = 0;
-  if (HAL_TIM_IC_ConfigChannel(&htim3, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  if (HAL_TIM_IC_ConfigChannel(&htim3, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
 }
 /* TIM4 init function */
 void MX_TIM4_Init(void)
 {
+  TIM_Encoder_InitTypeDef sConfig;
   TIM_MasterConfigTypeDef sMasterConfig;
-  TIM_IC_InitTypeDef sConfigIC;
 
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 0;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 0;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  if (HAL_TIM_IC_Init(&htim4) != HAL_OK)
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC1Filter = 0;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC2Filter = 0;
+  if (HAL_TIM_Encoder_Init(&htim4, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }
@@ -178,20 +182,6 @@ void MX_TIM4_Init(void)
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
-  sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
-  sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
-  sConfigIC.ICFilter = 0;
-  if (HAL_TIM_IC_ConfigChannel(&htim4, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  if (HAL_TIM_IC_ConfigChannel(&htim4, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -340,11 +330,11 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
   }
 }
 
-void HAL_TIM_IC_MspInit(TIM_HandleTypeDef* tim_icHandle)
+void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef* tim_encoderHandle)
 {
 
   GPIO_InitTypeDef GPIO_InitStruct;
-  if(tim_icHandle->Instance==TIM3)
+  if(tim_encoderHandle->Instance==TIM3)
   {
   /* USER CODE BEGIN TIM3_MspInit 0 */
 
@@ -358,7 +348,7 @@ void HAL_TIM_IC_MspInit(TIM_HandleTypeDef* tim_icHandle)
     */
     GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF2_TIM3;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -367,7 +357,7 @@ void HAL_TIM_IC_MspInit(TIM_HandleTypeDef* tim_icHandle)
 
   /* USER CODE END TIM3_MspInit 1 */
   }
-  else if(tim_icHandle->Instance==TIM4)
+  else if(tim_encoderHandle->Instance==TIM4)
   {
   /* USER CODE BEGIN TIM4_MspInit 0 */
 
@@ -381,7 +371,7 @@ void HAL_TIM_IC_MspInit(TIM_HandleTypeDef* tim_icHandle)
     */
     GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF10_TIM4;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -517,10 +507,10 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
   }
 }
 
-void HAL_TIM_IC_MspDeInit(TIM_HandleTypeDef* tim_icHandle)
+void HAL_TIM_Encoder_MspDeInit(TIM_HandleTypeDef* tim_encoderHandle)
 {
 
-  if(tim_icHandle->Instance==TIM3)
+  if(tim_encoderHandle->Instance==TIM3)
   {
   /* USER CODE BEGIN TIM3_MspDeInit 0 */
 
@@ -538,7 +528,7 @@ void HAL_TIM_IC_MspDeInit(TIM_HandleTypeDef* tim_icHandle)
 
   /* USER CODE END TIM3_MspDeInit 1 */
   }
-  else if(tim_icHandle->Instance==TIM4)
+  else if(tim_encoderHandle->Instance==TIM4)
   {
   /* USER CODE BEGIN TIM4_MspDeInit 0 */
 
