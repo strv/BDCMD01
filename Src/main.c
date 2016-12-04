@@ -48,7 +48,9 @@
 #include <stdint.h>
 #include "led.h"
 #include "uart_util.h"
+#include "pwm.h"
 #include "xprintf.h"
+#include "LSM6DS3_Driver.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -77,7 +79,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+	int32_t ax, ay, az;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -126,12 +128,14 @@ int main(void)
 	  xprintf("ADC calibration fail.\r\n");
   }
   adc_start();
+
+  pwm_enable();
+
+  IMU_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  HAL_GPIO_WritePin(MD_EN1_GPIO_Port, MD_EN1_Pin , GPIO_PIN_SET);
-  HAL_GPIO_WritePin(MD_EN2_GPIO_Port, MD_EN2_Pin , GPIO_PIN_SET);
   while (1)
   {
   /* USER CODE END WHILE */
@@ -139,6 +143,8 @@ int main(void)
   /* USER CODE BEGIN 3 */
 	  tick_now = HAL_GetTick();
 	  if(tick_now - tick_last >= 200){
+		  IMU_reflesh();
+		  xputs("\r\n");
 		  led_on(led_pos);
 		  led_off(~led_pos);
 		  led_pos <<= 1;
@@ -148,6 +154,15 @@ int main(void)
 		  //xprintf("Tick:%6d\r\n",tick_now);
 		  xprintf("VB :%4d CUR1:%4d CUR2:%4d TEMP:%4d \r\n", adc_get(ADC_VB), adc_get(ADC_CUR1), adc_get(ADC_CUR2), adc_get(ADC_TEMP));
 		  xprintf("REF:%4d REF :%4d REF :%4d REF :%4d \r\n", adc_get(ADC_REF4), adc_get(ADC_REF3), adc_get(ADC_REF2), adc_get(ADC_REF1));
+
+		  IMU_get_acc(&ax, &ay, &az);
+		  xprintf("ACC  X:%6d Y:%6d Z:%6d\r\n", ax, ay, az);
+
+		  IMU_get_gyro(&ax, &ay, &az);
+		  xprintf("GYRO X:%6d Y:%6d Z:%6d\r\n", ax, ay, az);
+
+		  xprintf("IMU Temp: %6d\r\n", IMU_get_temp());
+
 		  tick_last += 200;
 	  }
 
