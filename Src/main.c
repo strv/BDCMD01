@@ -51,6 +51,7 @@
 #include "pwm.h"
 #include "xprintf.h"
 #include "LSM6DS3_Driver.h"
+#include "S24C02D_Driver.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -69,10 +70,20 @@ void Error_Handler(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+const uint32_t Interval = 50;
 volatile uint32_t tick_last = 0;
 volatile uint32_t tick_now = 0;
 int32_t led_pos = 1;
+uint8_t buf[] = {
+		0x00,
+		0x01,
+		0x02,
+		0x03,
+		0x04,
+		0x05,
+		0x06,
+		0x07
+};
 /* USER CODE END 0 */
 
 int main(void)
@@ -132,6 +143,33 @@ int main(void)
   pwm_enable();
 
   IMU_init();
+  eeprom_init(0xA0);
+  if(HAL_OK != eeprom_write_page(0x01, buf)){
+	  xputs("eep write error\r\n");
+  }
+  xputs("Dump :");
+  for(uint32_t i = 0; i < 8; i++){
+	  xprintf(" 0x%02X",buf[i]);
+  }
+  xputs("\r\n");
+  for(uint32_t i = 0; i < 8; i++){
+	  buf[i] = 0;
+  }
+  xputs("Dump :");
+  for(uint32_t i = 0; i < 8; i++){
+	  xprintf(" 0x%02X",buf[i]);
+  }
+  xputs("\r\n");
+  HAL_Delay(10);
+  if(HAL_OK != eeprom_read_page_start(0x01, buf)){
+	  xputs("eep read error\r\n");
+  }
+  while(eeprom_is_busy());
+  xputs("Dump :");
+  for(uint32_t i = 0; i < 8; i++){
+	  xprintf(" 0x%02X",buf[i]);
+  }
+  xputs("\r\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -142,7 +180,7 @@ int main(void)
 
   /* USER CODE BEGIN 3 */
 	  tick_now = HAL_GetTick();
-	  if(tick_now - tick_last >= 200){
+	  if(tick_now - tick_last >= Interval){
 		  IMU_reflesh();
 		  xputs("\r\n");
 		  led_on(led_pos);
@@ -163,7 +201,7 @@ int main(void)
 
 		  xprintf("IMU Temp: %6d\r\n", IMU_get_temp());
 
-		  tick_last += 200;
+		  tick_last += Interval;
 	  }
 
   }

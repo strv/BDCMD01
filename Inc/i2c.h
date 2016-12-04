@@ -57,7 +57,9 @@ extern void Error_Handler(void);
 void MX_I2C1_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+I2C_HandleTypeDef* i2c_get_handle(void);
+void i2c_tx_cb_push(void (*cb)(I2C_HandleTypeDef *hi2c));
+void i2c_rx_cb_push(void (*cb)(I2C_HandleTypeDef *hi2c));
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
