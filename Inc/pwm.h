@@ -14,6 +14,10 @@
 #include "stm32f3xx_hal.h"
 
 #define PWM_DUTY_MAX (95)
+#define	PWM1_TIM TIM8
+#define	PWM2_TIM TIM1
+#define PWM1_IRQ_Handler TIM8_UP_IRQHandler
+#define PWM2_IRQ_Handler TIM1_UP_TIM16_IRQHandler
 
 typedef enum{
 	PWM1 = 1 << 0,
