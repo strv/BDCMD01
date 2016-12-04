@@ -36,12 +36,18 @@
 #include "spi.h"
 
 #include "gpio.h"
+#include "dma.h"
 
 /* USER CODE BEGIN 0 */
-
+static void (*tx_cb[8])(SPI_HandleTypeDef *hspi);
+static void (*txrx_cb[8])(SPI_HandleTypeDef *hspi);
+static uint32_t tx_cb_cnt = 0;
+static uint32_t txrx_cb_cnt = 0;
 /* USER CODE END 0 */
 
 SPI_HandleTypeDef hspi3;
+DMA_HandleTypeDef hdma_spi3_rx;
+DMA_HandleTypeDef hdma_spi3_tx;
 
 /* SPI3 init function */
 void MX_SPI3_Init(void)
@@ -92,6 +98,38 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+    /* Peripheral DMA init*/
+  
+    hdma_spi3_rx.Instance = DMA2_Channel1;
+    hdma_spi3_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    hdma_spi3_rx.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_spi3_rx.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_spi3_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_spi3_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    hdma_spi3_rx.Init.Mode = DMA_NORMAL;
+    hdma_spi3_rx.Init.Priority = DMA_PRIORITY_LOW;
+    if (HAL_DMA_Init(&hdma_spi3_rx) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    __HAL_LINKDMA(spiHandle,hdmarx,hdma_spi3_rx);
+
+    hdma_spi3_tx.Instance = DMA2_Channel2;
+    hdma_spi3_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
+    hdma_spi3_tx.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_spi3_tx.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_spi3_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_spi3_tx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    hdma_spi3_tx.Init.Mode = DMA_NORMAL;
+    hdma_spi3_tx.Init.Priority = DMA_PRIORITY_LOW;
+    if (HAL_DMA_Init(&hdma_spi3_tx) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    __HAL_LINKDMA(spiHandle,hdmatx,hdma_spi3_tx);
+
     /* Peripheral interrupt init */
     HAL_NVIC_SetPriority(SPI3_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(SPI3_IRQn);
@@ -119,6 +157,10 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
     */
     HAL_GPIO_DeInit(GPIOC, GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12);
 
+    /* Peripheral DMA DeInit*/
+    HAL_DMA_DeInit(spiHandle->hdmarx);
+    HAL_DMA_DeInit(spiHandle->hdmatx);
+
     /* Peripheral interrupt Deinit*/
     HAL_NVIC_DisableIRQ(SPI3_IRQn);
 
@@ -129,6 +171,41 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
 } 
 
 /* USER CODE BEGIN 1 */
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
+	if(hspi->Instance == hspi3.Instance){
+		for(uint32_t i = 0; i < tx_cb_cnt; i++){
+			tx_cb[i](hspi);
+		}
+	}
+}
+
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi){
+	if(hspi->Instance == hspi3.Instance){
+		for(uint32_t i = 0; i < txrx_cb_cnt; i++){
+			txrx_cb[i](hspi);
+		}
+	}
+}
+
+SPI_HandleTypeDef* spi_get_handle(void){
+	return &hspi3;
+}
+
+void spi_txrx_cb_push(void (*cb)(SPI_HandleTypeDef *hspi)){
+	if(txrx_cb_cnt == 8){
+		return;
+	}
+	txrx_cb[txrx_cb_cnt] = cb;
+	txrx_cb_cnt++;
+}
+
+void spi_tx_cb_push(void (*cb)(SPI_HandleTypeDef *hspi)){
+	if(tx_cb_cnt == 8){
+		return;
+	}
+	tx_cb[tx_cb_cnt] = cb;
+	tx_cb_cnt++;
+}
 
 /* USER CODE END 1 */
 

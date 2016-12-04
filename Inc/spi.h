@@ -57,7 +57,11 @@ extern void Error_Handler(void);
 void MX_SPI3_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi);
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi);
+SPI_HandleTypeDef* spi_get_handle(void);
+void spi_txrx_cb_push(void (*cb)(SPI_HandleTypeDef *hspi));
+void spi_tx_cb_push(void (*cb)(SPI_HandleTypeDef *hspi));
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
