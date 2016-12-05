@@ -125,6 +125,19 @@ void HAL_DAC_MspDeInit(DAC_HandleTypeDef* dacHandle)
 } 
 
 /* USER CODE BEGIN 1 */
+void dac_start(void){
+	HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
+	HAL_DAC_Start(&hdac, DAC_CHANNEL_2);
+}
+
+void dac_set(uint16_t ch, uint16_t val){
+	val &= 0xFFF;
+	if(ch == 0){
+		HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, val);
+	}else{
+		HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, val);
+	}
+}
 
 /* USER CODE END 1 */
 

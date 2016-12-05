@@ -57,7 +57,8 @@ extern void Error_Handler(void);
 void MX_DAC_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+void dac_start(void);
+void dac_set(uint16_t ch, uint16_t val);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
