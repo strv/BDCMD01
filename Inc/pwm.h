@@ -29,5 +29,6 @@ void pwm_enable(void);
 void pwm_disable(void);
 void pwm_set_duty(PWM_CH ch, int32_t percent);
 void pwm_set_mv(PWM_CH ch, int32_t mv);
-
+void PWM1_IRQ_Handler(void);
+void PWM2_IRQ_Handler(void);
 #endif /* PWM_H_ */
