@@ -52,6 +52,7 @@
 #include "xprintf.h"
 #include "LSM6DS3_Driver.h"
 #include "S24C02D_Driver.h"
+#include "encoder.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -83,6 +84,12 @@ uint8_t buf[] = {
 		0x05,
 		0x06,
 		0x07
+};
+bool set_duty(int32_t argc,int32_t* argv);
+UU_ConsoleCommand duty_cmd = {
+	"DUTY",
+	set_duty,
+	"DUTY [ch] [percent]\r\n"
 };
 /* USER CODE END 0 */
 
@@ -139,6 +146,7 @@ int main(void)
 	  xprintf("ADC calibration fail.\r\n");
   }
   adc_start();
+  dac_start();
 
   pwm_enable();
 
@@ -170,6 +178,11 @@ int main(void)
 	  xprintf(" 0x%02X",buf[i]);
   }
   xputs("\r\n");
+
+  encoder_init(DIR_FWD, DIR_FWD);
+  pwm_set_duty(PWM1, 25);
+  pwm_set_duty(PWM2, -25);
+  uu_push_command(&duty_cmd);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -182,16 +195,18 @@ int main(void)
 	  tick_now = HAL_GetTick();
 	  if(tick_now - tick_last >= Interval){
 		  IMU_reflesh();
-		  xputs("\r\n");
 		  led_on(led_pos);
 		  led_off(~led_pos);
 		  led_pos <<= 1;
 		  if(led_pos > LED3){
 			  led_pos = LED1;
 		  }
-		  //xprintf("Tick:%6d\r\n",tick_now);
-		  xprintf("VB :%4d CUR1:%4d CUR2:%4d TEMP:%4d \r\n", adc_get(ADC_VB), adc_get(ADC_CUR1), adc_get(ADC_CUR2), adc_get(ADC_TEMP));
-		  xprintf("REF:%4d REF :%4d REF :%4d REF :%4d \r\n", adc_get(ADC_REF4), adc_get(ADC_REF3), adc_get(ADC_REF2), adc_get(ADC_REF1));
+		  /*
+		  xputs("\r\n");
+
+		  xprintf("Tick:%6d\r\n",tick_now);
+		  xprintf("VB :%4d CUR1:%4d CUR2:%4d TEMP:%4d \r\n", adc_get(ADC_VB) * 3300 * 19 / 4095, adc_get(ADC_CUR1), adc_get(ADC_CUR2), adc_get(ADC_TEMP));
+		  xprintf("REF:%4d REF :%4d REF :%4d REF :%4d \r\n", adc_get(ADC_REF4), adc_get(ADC_REF2), adc_get(ADC_REF1), adc_get(ADC_REF1));
 
 		  IMU_get_acc(&ax, &ay, &az);
 		  xprintf("ACC  X:%6d Y:%6d Z:%6d\r\n", ax, ay, az);
@@ -201,9 +216,14 @@ int main(void)
 
 		  xprintf("IMU Temp: %6d\r\n", IMU_get_temp());
 
+		  xprintf("ENC1:%6d ENC2:%6d\r\n", encoder_get(MD_CH1), encoder_get(MD_CH2));
+		   */
+		  dac_set(0, tick_now);
+		  dac_set(1, tick_now * 2);
+
 		  tick_last += Interval;
 	  }
-
+	  uu_proc_command();
   }
   /* USER CODE END 3 */
 
@@ -275,6 +295,19 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
+bool set_duty(int32_t argc,int32_t* argv){
+	if(argc != 2){
+		return false;
+	}
+
+	if(argv[0] == 1){
+		pwm_set_duty(PWM1, argv[1]);
+	}else if(argv[0] == 2){
+		pwm_set_duty(PWM2, argv[1]);
+	}
+
+	return true;
+}
 /* USER CODE END 4 */
 
 /**
