@@ -40,9 +40,9 @@
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
-#define PWM1_Period 3200
+#define PWM1_Period 3600
 #define PWM1_DeadTime 8
-#define PWM2_Period 3200
+#define PWM2_Period 3600
 #define PWM2_DeadTime 8
 
 #define LED3_Pin GPIO_PIN_13

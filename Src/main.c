@@ -89,7 +89,8 @@ bool set_duty(int32_t argc,int32_t* argv);
 UU_ConsoleCommand duty_cmd = {
 	"DUTY",
 	set_duty,
-	"DUTY [ch] [percent]\r\n"
+	"DUTY [ch] [percent]\r\n\
+	PWM出力のdutyを設定する．chは1か2を，percentは-100から100の値を指定する．"
 };
 /* USER CODE END 0 */
 
@@ -180,8 +181,6 @@ int main(void)
   xputs("\r\n");
 
   encoder_init(DIR_FWD, DIR_FWD);
-  pwm_set_duty(PWM1, 25);
-  pwm_set_duty(PWM2, -25);
   uu_push_command(&duty_cmd);
   /* USER CODE END 2 */
 
