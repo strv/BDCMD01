@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#define	UU_BUFF_LEN		(128)				// •K‚¸2‚Ì—İæ‚Ì’l‚É‚·‚é
+#define	UU_BUFF_LEN		(128)				// ï¿½Kï¿½ï¿½2ï¿½Ì—İï¿½Ì’lï¿½É‚ï¿½ï¿½ï¿½
 #define	UU_UART			USART2
 #define	UU_IRQ_Handler	USART2_IRQHandler
 #define	UU_NL_TXT		'\r'
@@ -30,9 +30,10 @@ typedef struct{
 void uu_init(void);
 void uu_putc(unsigned char c);
 unsigned char uu_getc(void);
-uint16_t uu_rxed_nl_cnt(void);
 bool uu_rx_buff_ore(void);
 bool uu_tx_buff_ore(void);
+void uu_rx_buff_flush(void);
+void uu_tx_buff_flush(void);
 void UU_IRQ_Handler(void);
 
 void uu_proc_command(void);
