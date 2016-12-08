@@ -98,10 +98,10 @@ void uu_tx_buff_flush(void){
 	UU_UART->CR1 |= USART_CR1_TXEIE;
 }
 
-char rx_tmp;
-uint16_t tmp_p;
-uint32_t int_state;
 void UU_IRQ_Handler(void){
+	static char rx_tmp;
+	static uint16_t tmp_p;
+	static uint32_t int_state;
 	int_state = UU_UART->ISR;
 
 	if(int_state & USART_ISR_RXNE){
@@ -135,7 +135,7 @@ void UU_IRQ_Handler(void){
 
 void uu_proc_command(void){
 	static char str[UU_CSL_STR_LEN] = {};
-	uint32_t str_ofst = 0;
+	uint32_t str_ofst;
 	static char cmd[UU_CSL_CMD_LEN] = {'?'};
 	static char* parg;
 	static int32_t argv[UU_CSL_ARG_MAX];
@@ -146,12 +146,14 @@ void uu_proc_command(void){
 
 	if(uu_rx_buff_ore()){
 		uu_rx_buff_flush();
-		memset(str, '\0', str_len);
+		memset(str, '\0', UU_CSL_STR_LEN);
+		xputs("Over run detected\r\n");
 		return;
 	}
 
 	str_ofst = strlen(str);
-	if(xgets(str + str_ofst, UU_CSL_STR_LEN)){
+ 	if(xgets(str + str_ofst, UU_CSL_STR_LEN - str_ofst)){
+		str_len = strlen(str);
 		cmd_len = strcspn(str, " ");
 		if(cmd_len >= UU_CSL_CMD_LEN){
 			xputs("Too long command\r\n");
@@ -159,7 +161,6 @@ void uu_proc_command(void){
 		}else if (cmd_len > 0) {
 			strncpy(cmd, str, cmd_len);
 			cmd[cmd_len] = '\0';
-			str_len = strlen(str);
 			parg = &str[cmd_len + 1];
 			argc = 0;
 			while ((parg < str + str_len)) {
@@ -223,6 +224,11 @@ void uu_proc_command(void){
 proc_out:
 		xputs(">");
 		memset(str, '\0', str_len);
+	}else{
+		if(strlen(str) == UU_CSL_STR_LEN - 1){
+			memset(str, '\0', UU_CSL_STR_LEN);
+			xputs("Too long command\r\n");
+		}
 	}
 }
 

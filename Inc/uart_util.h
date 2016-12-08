@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#define	UU_BUFF_LEN		(128)				// �K��2�̗ݏ�̒l�ɂ���
+#define	UU_BUFF_LEN		(512)				// �K��2�̗ݏ�̒l�ɂ���
 #define	UU_UART			USART2
 #define	UU_IRQ_Handler	USART2_IRQHandler
 #define	UU_NL_TXT		'\r'
