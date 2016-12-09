@@ -105,8 +105,8 @@ void PWM2_IRQ_Handler(void){
 		if(vcmd_interval_cnt[1] >= Vcmd_interval){
 			vcmd_interval_cnt[1] = 0;
 			pres_vb = adc_vbatt();
-			setCCR_2A( vcmd_target[1] * Pwm1_ccr_center / pres_vb + Pwm1_ccr_center);
-			setCCR_2B(-vcmd_target[1] * Pwm1_ccr_center / pres_vb + Pwm1_ccr_center);
+			setCCR_2A(-vcmd_target[1] * Pwm1_ccr_center / pres_vb + Pwm1_ccr_center);
+			setCCR_2B( vcmd_target[1] * Pwm1_ccr_center / pres_vb + Pwm1_ccr_center);
 		}
 		PWM2_TIM->SR &= ~(TIM_SR_UIF_Msk);
 	}
