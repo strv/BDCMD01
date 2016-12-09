@@ -34,6 +34,7 @@ bool uu_rx_buff_ore(void);
 bool uu_tx_buff_ore(void);
 void uu_rx_buff_flush(void);
 void uu_tx_buff_flush(void);
+bool uu_tx_busy(void);
 void UU_IRQ_Handler(void);
 
 void uu_proc_command(void);

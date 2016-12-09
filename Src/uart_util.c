@@ -84,6 +84,13 @@ bool uu_tx_buff_ore(void){
 	return b;
 }
 
+bool uu_tx_busy(void){
+	if(tx_buff_rp != tx_buff_wp){
+		return true;
+	}
+	return false;
+}
+
 void uu_rx_buff_flush(void){
 	UU_UART->CR1 &= ~USART_CR1_RXNEIE;
 	rx_buff_wp = 0;
@@ -211,6 +218,7 @@ void uu_proc_command(void){
 				if(!strcmp(cmd, commands[i].cmd_name)){
 					if(!commands[i].func(argc, argv)){
 						xputs(commands[i].help_msg);
+						xputs("\r\n");
 					}
 					done = true;
 					break;
