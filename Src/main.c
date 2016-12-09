@@ -90,7 +90,47 @@ UU_ConsoleCommand duty_cmd = {
 	"DUTY",
 	set_duty,
 	"DUTY [ch] [percent]\r\n\
-	PWM出力のdutyを設定する．chは1か2を，percentは-100から100の値を指定する．"
+	Set duty ratio to motor driver [ch]. [percent] can set a number between -100 to 100."
+};
+
+bool print_cur(int32_t argc, int32_t* argv);
+UU_ConsoleCommand cur_cmd = {
+	"CUR",
+	print_cur,
+	"CUR [ch]\r\n\
+	Get present current value of [ch] in [mA]. It will print both value if do not set [ch] argument."
+};
+
+bool print_adc(int32_t argc, int32_t* argv);
+UU_ConsoleCommand print_adc_cmd = {
+	"ADC",
+	print_adc,
+	"ADC [ch]\r\n\
+	Get present ADC value of [ch] in raw value. It will print all value if do not set [ch] argument."
+};
+
+bool print_vb(int32_t argc, int32_t* argv);
+UU_ConsoleCommand print_vb_cmd = {
+	"VB",
+	print_vb,
+	"VB\r\n\
+	Get present input voltage in [mV]."
+};
+
+bool set_pwm_mode(int32_t argc, int32_t* argv);
+UU_ConsoleCommand set_pwm_mode_cmd = {
+	"PWMMODE",
+	set_pwm_mode,
+	"PWMMODE [ch] [mode]\r\n\
+	Set / Get PWM output mode. [ch] is 1, 2 or 3. 3 is both. [mode] is 0 (Duty) or 1 (Vcmd). "
+};
+
+bool vcmd(int32_t argc, int32_t* argv);
+UU_ConsoleCommand vcmd_cmd = {
+	"VCMD",
+	vcmd,
+	"VCMD [ch] [mV]\r\n\
+	Set target output voltage in [mV] for [ch]. [ch] is 1 , 2 or 3. 3 is both."
 };
 /* USER CODE END 0 */
 
@@ -147,13 +187,16 @@ int main(void)
 	  xprintf("ADC calibration fail.\r\n");
   }
   adc_start();
+  xputs("Start ADC\r\n");
   dac_start();
+  xputs("Start DAC\r\n");
 
   pwm_enable();
+  xputs("Enable PWM\r\n");
 
   IMU_init();
   eeprom_init(0xA0);
-  if(HAL_OK != eeprom_write_page(0x01, buf)){
+  if(HAL_OK != eeprom_write_page(0x00, buf)){
 	  xputs("eep write error\r\n");
   }
   xputs("Dump :");
@@ -182,6 +225,12 @@ int main(void)
 
   encoder_init(DIR_FWD, DIR_FWD);
   uu_push_command(&duty_cmd);
+  uu_push_command(&cur_cmd);
+  uu_push_command(&print_adc_cmd);
+  uu_push_command(&print_vb_cmd);
+  uu_push_command(&set_pwm_mode_cmd);
+  uu_push_command(&vcmd_cmd);
+  adc_cur_cal_start();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -194,6 +243,11 @@ int main(void)
 	  tick_now = HAL_GetTick();
 	  if(tick_now - tick_last >= Interval){
 		  IMU_reflesh();
+		  if(tick_now < 64 * Interval){
+			  adc_cur_cal();
+		  }else{
+			  adc_cur_cal_stop();
+		  }
 		  led_on(led_pos);
 		  led_off(~led_pos);
 		  led_pos <<= 1;
@@ -304,6 +358,74 @@ bool set_duty(int32_t argc,int32_t* argv){
 	}else if(argv[0] == 2){
 		pwm_set_duty(PWM2, argv[1]);
 	}
+
+	return true;
+}
+
+bool print_cur(int32_t argc, int32_t* argv){
+	if(argc > 1){
+		return false;
+	}
+
+	if(argc == 0){
+		xprintf("CUR : %6d %6d", adc_cur1(), adc_cur2());
+	}else{
+		xprintf("CUR%d = ", argv[0]);
+		if(argv[0] == 1){
+			xprintf("%6d", adc_cur1());
+		}else if(argv[0] == 1){
+			xprintf("%6d", adc_cur2());
+		}
+	}
+	xputs("\r\n");
+	return true;
+}
+
+bool print_adc(int32_t argc, int32_t* argv){
+	if(argc > 1){
+		return false;
+	}
+
+	xprintf("ADC : %4d %4d %4d %4d %4d\r\n", adc_get(ADC_VB), adc_get(ADC_CUR1), adc_get(ADC_CUR2), adc_get(ADC_TEMP), adc_get(ADC_REF1));
+	return true;
+}
+
+bool print_vb(int32_t argc, int32_t* argv){
+	if(argc > 0){
+		return false;
+	}
+
+	xprintf("VB : %5d\r\n", adc_vbatt());
+	return true;
+}
+
+bool set_pwm_mode(int32_t argc, int32_t* argv){
+	if(argc != 2){
+		return false;
+	}
+	if(argv[0] > PWM_CH_MAX){
+		return false;
+	}
+	if(argv[1] > PWM_MODE_MAX){
+		return false;
+	}
+
+	pwm_set_mode(argv[0], argv[1]);
+	xprintf("Set PWM mode to %s\r\n", argv[1] == PWM_DUTY ? "DUTY" : "VCMD");
+
+	return true;
+}
+
+bool vcmd(int32_t argc, int32_t* argv){
+	if(argc != 2){
+		return false;
+	}
+	if(argv[0] > PWM_CH_MAX){
+		return false;
+	}
+
+	pwm_set_mv(argv[0], argv[1]);
+	xprintf("Set target voltage to %d\r\n", argv[1]);
 
 	return true;
 }
