@@ -132,13 +132,20 @@ UU_ConsoleCommand vcmd_cmd = {
 	"VCMD [ch] [mV]\r\n\
 	Set target output voltage in [mV] for [ch]. [ch] is 1 , 2 or 3. 3 is both."
 };
+
+bool imu_read(int32_t argc, int32_t* argv);
+UU_ConsoleCommand imu_read_cmd = {
+	"IMU",
+	imu_read,
+	"IMU\r\n\
+	Get raw IMU value"
+};
 /* USER CODE END 0 */
 
 int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	int32_t ax, ay, az;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -230,6 +237,7 @@ int main(void)
   uu_push_command(&print_vb_cmd);
   uu_push_command(&set_pwm_mode_cmd);
   uu_push_command(&vcmd_cmd);
+  uu_push_command(&imu_read_cmd);
   adc_cur_cal_start();
   /* USER CODE END 2 */
 
@@ -427,6 +435,16 @@ bool vcmd(int32_t argc, int32_t* argv){
 	pwm_set_mv(argv[0], argv[1]);
 	xprintf("Set target voltage to %d\r\n", argv[1]);
 
+	return true;
+}
+
+bool imu_read(int32_t argc, int32_t* argv){
+	int32_t ax,ay,az;
+	IMU_get_acc(&ax, &ay, &az);
+	xprintf("ACC  X:%6d Y:%6d Z:%6d\r\n", ax, ay, az);
+	IMU_get_gyro(&ax, &ay, &az);
+	xprintf("GYRO X:%6d Y:%6d Z:%6d\r\n", ax, ay, az);
+	xprintf("IMU Temp: %6d\r\n", IMU_get_temp());
 	return true;
 }
 /* USER CODE END 4 */
