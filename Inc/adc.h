@@ -44,6 +44,7 @@
 
 /* USER CODE BEGIN Includes */
 #include <stdint.h>
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 extern ADC_HandleTypeDef hadc1;
@@ -52,12 +53,15 @@ extern ADC_HandleTypeDef hadc3;
 extern ADC_HandleTypeDef hadc4;
 
 /* USER CODE BEGIN Private defines */
-#define ADC_BUF_LEN (64)
+#define ADC_BUF_LEN (128)
 #define ADC1_CH_NUM	(2)
-#define ADC2_CH_NUM	(2)
-#define ADC3_CH_NUM	(2)
-#define ADC4_CH_NUM	(2)
-#define ADC_Q (0)
+#define ADC2_CH_NUM	(1)
+#define ADC3_CH_NUM	(1)
+#define ADC4_CH_NUM	(1)
+#define ADC_Q (8)
+#define	ADC_CUR_GAIN	(45)	// [mV]/[A]	for ACS711 31A
+//#define	ADC_CUR_GAIN	(90)	// [mV]/[A] for ACS711 15A
+
 
 typedef enum{
 	ADC_TEMP,
@@ -83,6 +87,13 @@ void MX_ADC4_Init(void);
 HAL_StatusTypeDef adc_start_cal(void);
 void adc_start(void);
 uint32_t adc_get(ADC_CH ch);
+int32_t adc_vbatt(void);
+int32_t adc_cur1(void);
+int32_t adc_cur2(void);
+void adc_cur_cal(void);
+void adc_cur_reverse(int32_t ch);
+void adc_cur_cal_start(void);
+void adc_cur_cal_stop(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

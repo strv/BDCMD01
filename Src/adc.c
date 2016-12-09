@@ -38,10 +38,13 @@
 #include "dma.h"
 
 /* USER CODE BEGIN 0 */
-uint16_t adc1[ADC_BUF_LEN * ADC1_CH_NUM];
-uint16_t adc2[ADC_BUF_LEN * ADC2_CH_NUM];
-uint16_t adc3[ADC_BUF_LEN * ADC3_CH_NUM];
-uint16_t adc4[ADC_BUF_LEN * ADC4_CH_NUM];
+static uint16_t adc1[ADC_BUF_LEN * ADC1_CH_NUM];
+static uint16_t adc2[ADC_BUF_LEN * ADC2_CH_NUM];
+static uint16_t adc3[ADC_BUF_LEN * ADC3_CH_NUM];
+static uint16_t adc4[ADC_BUF_LEN * ADC4_CH_NUM];
+static int32_t cur_offset[2] = {};
+static bool do_cur_long_cal = false;
+static int32_t cur_reverse[2] = {1, 1};
 /* USER CODE END 0 */
 
 ADC_HandleTypeDef hadc1;
@@ -121,11 +124,11 @@ void MX_ADC2_Init(void)
   hadc2.Instance = ADC2;
   hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
   hadc2.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc2.Init.ScanConvMode = ADC_SCAN_ENABLE;
+  hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc2.Init.ContinuousConvMode = ENABLE;
   hadc2.Init.DiscontinuousConvMode = DISABLE;
   hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc2.Init.NbrOfConversion = 2;
+  hadc2.Init.NbrOfConversion = 1;
   hadc2.Init.DMAContinuousRequests = ENABLE;
   hadc2.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   hadc2.Init.LowPowerAutoWait = DISABLE;
@@ -140,18 +143,9 @@ void MX_ADC2_Init(void)
   sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = 1;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
-  sConfig.SamplingTime = ADC_SAMPLETIME_19CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_61CYCLES_5;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-    /**Configure Regular Channel 
-    */
-  sConfig.Channel = ADC_CHANNEL_VREFINT;
-  sConfig.Rank = 2;
   if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -169,13 +163,13 @@ void MX_ADC3_Init(void)
   hadc3.Instance = ADC3;
   hadc3.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
   hadc3.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc3.Init.ScanConvMode = ADC_SCAN_ENABLE;
+  hadc3.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc3.Init.ContinuousConvMode = ENABLE;
   hadc3.Init.DiscontinuousConvMode = DISABLE;
   hadc3.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc3.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc3.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc3.Init.NbrOfConversion = 2;
+  hadc3.Init.NbrOfConversion = 1;
   hadc3.Init.DMAContinuousRequests = ENABLE;
   hadc3.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   hadc3.Init.LowPowerAutoWait = DISABLE;
@@ -198,18 +192,9 @@ void MX_ADC3_Init(void)
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = 1;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
-  sConfig.SamplingTime = ADC_SAMPLETIME_19CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_61CYCLES_5;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
-  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-    /**Configure Regular Channel 
-    */
-  sConfig.Channel = ADC_CHANNEL_VREFINT;
-  sConfig.Rank = 2;
   if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -226,11 +211,11 @@ void MX_ADC4_Init(void)
   hadc4.Instance = ADC4;
   hadc4.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
   hadc4.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc4.Init.ScanConvMode = ADC_SCAN_ENABLE;
+  hadc4.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc4.Init.ContinuousConvMode = ENABLE;
   hadc4.Init.DiscontinuousConvMode = DISABLE;
   hadc4.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc4.Init.NbrOfConversion = 2;
+  hadc4.Init.NbrOfConversion = 1;
   hadc4.Init.DMAContinuousRequests = ENABLE;
   hadc4.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   hadc4.Init.LowPowerAutoWait = DISABLE;
@@ -248,15 +233,6 @@ void MX_ADC4_Init(void)
   sConfig.SamplingTime = ADC_SAMPLETIME_601CYCLES_5;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
-  if (HAL_ADC_ConfigChannel(&hadc4, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-    /**Configure Regular Channel 
-    */
-  sConfig.Channel = ADC_CHANNEL_VREFINT;
-  sConfig.Rank = 2;
   if (HAL_ADC_ConfigChannel(&hadc4, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -581,9 +557,53 @@ uint32_t adc_get(ADC_CH ch){
 		ret_val += *(p_buf + i);
 	}
 
-	return (ret_val << ADC_Q) / ADC_BUF_LEN;
+	return ret_val * (1 << ADC_Q) / ADC_BUF_LEN;
 }
 
+int32_t adc_vbatt(void){
+	return (int64_t)adc_get(ADC_VB) * 3300LL * 19LL / 4095 / (1 << ADC_Q);
+}
+
+int32_t adc_cur1(void){
+	int32_t i;
+	i = ((int64_t)adc_get(ADC_CUR1) - (int64_t)cur_offset[0]) * 3300LL * 1000LL / 4095 / (1 << ADC_Q) / ADC_CUR_GAIN;
+	return cur_reverse[0] * i;
+}
+
+int32_t adc_cur2(void){
+	int32_t i;
+	i = ((int64_t)adc_get(ADC_CUR2) - (int64_t)cur_offset[1]) * 3300LL * 1000LL / 4095 / (1 << ADC_Q) / ADC_CUR_GAIN;
+	return cur_reverse[1] * i;
+}
+
+void adc_cur_reverse(int32_t ch){
+	if(ch & 1){
+		cur_reverse[0] = -1;
+	}
+	if(ch & 2){
+		cur_reverse[1] = -1;
+	}
+}
+
+void adc_cur_cal(void){
+	if(do_cur_long_cal){
+		cur_offset[0] = (cur_offset[0] + adc_get(ADC_CUR1)) / 2;
+		cur_offset[1] = (cur_offset[1] + adc_get(ADC_CUR2)) / 2;
+	}else{
+		cur_offset[0] = adc_get(ADC_CUR1);
+		cur_offset[1] = adc_get(ADC_CUR2);
+	}
+}
+
+void adc_cur_cal_start(void){
+	do_cur_long_cal = false;
+	adc_cur_cal();
+	do_cur_long_cal = true;
+}
+
+void adc_cur_cal_stop(void){
+	do_cur_long_cal = false;
+}
 /* USER CODE END 1 */
 
 /**
