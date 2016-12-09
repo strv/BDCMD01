@@ -59,8 +59,8 @@ extern ADC_HandleTypeDef hadc4;
 #define ADC3_CH_NUM	(1)
 #define ADC4_CH_NUM	(1)
 #define ADC_Q (8)
-#define	ADC_CUR_GAIN	(45)	// [mV]/[A]	for ACS711 31A
-//#define	ADC_CUR_GAIN	(90)	// [mV]/[A] for ACS711 15A
+//#define	ADC_CUR_GAIN	(45)	// [mV]/[A]	for ACS711 31A
+#define	ADC_CUR_GAIN	(90)	// [mV]/[A] for ACS711 15A
 
 
 typedef enum{
