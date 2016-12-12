@@ -27,8 +27,7 @@ static int32_t vcmd_target[2] = {};
 static int32_t vcmd_tick[2] = {0, 0};
 
 void pwm_enable(void){
-	pwm_set_duty(PWM1, 0);
-	pwm_set_duty(PWM2, 0);
+	pwm_set_duty(MD_CH12, 0);
 	pres_vb = adc_vbatt();
 	tim_start();
 	HAL_Delay(10);
@@ -41,43 +40,43 @@ void pwm_disable(void){
 	HAL_GPIO_WritePin(MD_EN2_GPIO_Port, MD_EN2_Pin , GPIO_PIN_RESET);
 }
 
-void pwm_set_duty(PWM_CH ch, int32_t percent){
+void pwm_set_duty(MD_CH ch, int32_t percent){
 	if(percent > PWM_DUTY_MAX){
 		percent = PWM_DUTY_MAX;
 	}else if(percent < -PWM_DUTY_MAX){
 		percent = -PWM_DUTY_MAX;
 	}
 
-	if(ch & PWM1){
+	if(ch & MD_CH1){
 		next_ccr[0] = percent * PWM1_Period / 100 / 2;
 		setCCR_1A( next_ccr[0] + PWM1_Period / 2);
 		setCCR_1B(-next_ccr[0] + PWM1_Period / 2);
 	}
-	if(ch & PWM2){
+	if(ch & MD_CH2){
 		next_ccr[1] = percent * PWM2_Period / 100 / 2;
 		setCCR_2A(-next_ccr[1] + PWM2_Period / 2);
 		setCCR_2B( next_ccr[1] + PWM2_Period / 2);
 	}
 }
 
-void pwm_set_mv(PWM_CH ch, int32_t mv){
-	if(ch & PWM1){
+void pwm_set_mv(MD_CH ch, int32_t mv){
+	if(ch & MD_CH1){
 		vcmd_target[0] = mv;
 	}
-	if(ch & PWM2){
+	if(ch & MD_CH2){
 		vcmd_target[1] = mv;
 	}
 }
 
-void pwm_set_mode(PWM_CH ch, PWM_MODE mode){
-	if(ch & PWM1){
+void pwm_set_mode(MD_CH ch, PWM_MODE mode){
+	if(ch & MD_CH1){
 		if(mode == PWM_DUTY){
 			vcmd_tick[0] = 0;
 		}else if(mode == PWM_VCMD){
 			vcmd_tick[0] = 1;
 		}
 	}
-	if(ch & PWM2){
+	if(ch & MD_CH2){
 		if(mode == PWM_DUTY){
 			vcmd_tick[1] = 0;
 		}else if(mode == PWM_VCMD){

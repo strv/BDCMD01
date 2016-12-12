@@ -12,19 +12,13 @@
 #include <stdbool.h>
 #include "main.h"
 #include "stm32f3xx_hal.h"
+#include "motor_driver.h"
 
 #define PWM_DUTY_MAX (95)
 #define	PWM1_TIM TIM1
 #define	PWM2_TIM TIM8
 #define PWM1_IRQ_Handler TIM1_UP_TIM16_IRQHandler
 #define PWM2_IRQ_Handler TIM8_UP_IRQHandler
-
-typedef enum{
-	PWM1 = 1 << 0,
-	PWM2 = 1 << 1,
-	PWM12 = PWM1 | PWM2,
-	PWM_CH_MAX
-}PWM_CH;
 
 typedef enum{
 	PWM_DUTY,
@@ -34,9 +28,9 @@ typedef enum{
 
 void pwm_enable(void);
 void pwm_disable(void);
-void pwm_set_duty(PWM_CH ch, int32_t percent);
-void pwm_set_mv(PWM_CH ch, int32_t mv);
-void pwm_set_mode(PWM_CH ch, PWM_MODE mode);
+void pwm_set_duty(MD_CH ch, int32_t percent);
+void pwm_set_mv(MD_CH ch, int32_t mv);
+void pwm_set_mode(MD_CH ch, PWM_MODE mode);
 void PWM1_IRQ_Handler(void);
 void PWM2_IRQ_Handler(void);
 #endif /* PWM_H_ */
