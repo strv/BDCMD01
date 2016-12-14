@@ -15,5 +15,9 @@ typedef enum{
 	MD_CH_MAX
 }MD_CH;
 
+typedef enum{
+	DIR_FWD,
+	DIR_REV
+}DIR;
 
 #endif /* MOTOR_DRIVER_H_ */
