@@ -199,6 +199,8 @@ static HAL_StatusTypeDef cmd_read_start(uint8_t reg, uint16_t len){
 		case HAL_TIMEOUT:
 			xputs("TIMEOUT");
 			break;
+		default:
+			break;
 		}
 		xputs("\r\n");
 	}
