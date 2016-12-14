@@ -140,6 +140,14 @@ UU_ConsoleCommand imu_read_cmd = {
 	"IMU\r\n\
 	Get raw IMU value"
 };
+
+bool enc_read(int32_t argc, int32_t* argv);
+UU_ConsoleCommand enc_read_cmd = {
+	"ENC",
+	enc_read,
+	"ENC\r\n\
+	Get raw encoder value"
+};
 /* USER CODE END 0 */
 
 int main(void)
@@ -230,7 +238,7 @@ int main(void)
   }
   xputs("\r\n");
 
-  encoder_init(DIR_FWD, DIR_FWD);
+  encoder_init(DIR_REV, DIR_REV);
   uu_push_command(&duty_cmd);
   uu_push_command(&cur_cmd);
   uu_push_command(&print_adc_cmd);
@@ -238,6 +246,7 @@ int main(void)
   uu_push_command(&set_pwm_mode_cmd);
   uu_push_command(&vcmd_cmd);
   uu_push_command(&imu_read_cmd);
+  uu_push_command(&enc_read_cmd);
   adc_cur_cal_start();
   /* USER CODE END 2 */
 
@@ -362,9 +371,9 @@ bool set_duty(int32_t argc,int32_t* argv){
 	}
 
 	if(argv[0] == 1){
-		pwm_set_duty(PWM1, argv[1]);
+		pwm_set_duty(MD_CH1, argv[1]);
 	}else if(argv[0] == 2){
-		pwm_set_duty(PWM2, argv[1]);
+		pwm_set_duty(MD_CH2, argv[1]);
 	}
 
 	return true;
@@ -411,7 +420,7 @@ bool set_pwm_mode(int32_t argc, int32_t* argv){
 	if(argc != 2){
 		return false;
 	}
-	if(argv[0] > PWM_CH_MAX){
+	if(argv[0] > MD_CH_MAX){
 		return false;
 	}
 	if(argv[1] > PWM_MODE_MAX){
@@ -428,7 +437,7 @@ bool vcmd(int32_t argc, int32_t* argv){
 	if(argc != 2){
 		return false;
 	}
-	if(argv[0] > PWM_CH_MAX){
+	if(argv[0] > MD_CH_MAX){
 		return false;
 	}
 
@@ -445,6 +454,11 @@ bool imu_read(int32_t argc, int32_t* argv){
 	IMU_get_gyro(&ax, &ay, &az);
 	xprintf("GYRO X:%6d Y:%6d Z:%6d\r\n", ax, ay, az);
 	xprintf("IMU Temp: %6d\r\n", IMU_get_temp());
+	return true;
+}
+
+bool enc_read(int32_t argc, int32_t* argv){
+	xprintf("ENC1:%6d ENC2:%6d\r\n",(int32_t)encoder_get(MD_CH1), (int32_t)encoder_get(MD_CH2));
 	return true;
 }
 /* USER CODE END 4 */
