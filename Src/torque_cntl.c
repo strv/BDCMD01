@@ -9,9 +9,12 @@
 #include <stdbool.h>
 #include "adc.h"
 #include "pwm.h"
+#include "tim.h"
 
 static const int64_t Isum_max = 100000;
+static const int64_t tc_freq[2] = {20*1000, 20*1000};
 static int64_t gkp[2], gki[2], gkd[2];
+static int64_t gkp_div[2], gki_div[2], gkd_div[2];
 static int32_t gkt[2];
 static int32_t gl[2], gr[2];		//mH, mOhm
 static int64_t isum[2] = {};
@@ -20,14 +23,27 @@ static int64_t vol_out[2] = {};		//mV
 static bool do_tc[2] = {false, false};
 
 void tc_init(void){
-
+	gkp_div[0] = 0xFF;
+	gki_div[0] = 0xFF;
+	gkd_div[0] = 0xFF;
+	gr[0] = 1000;
+	gkp_div[1] = 0xFF;
+	gki_div[1] = 0xFF;
+	gkd_div[1] = 0xFF;
+	gr[1] = 1000;
+	control_tim_start();
 }
 
 void tc_enable(MD_CH ch){
+	pwm_set_mode(ch, PWM_VCMD);
 	if(ch & MD_CH1){
+		isum[0] = 0;
+		cur_target[0] = 0;
 		do_tc[0] = true;
 	}
 	if(ch & MD_CH2){
+		isum[1] = 0;
+		cur_target[1] = 0;
 		do_tc[1] = true;
 	}
 }
@@ -110,6 +126,28 @@ void tc_set_trq(MD_CH ch, int32_t torque){
 	}
 }
 
+void tc_set_ma(MD_CH ch, int32_t ma){
+	if(ch & MD_CH1){
+		cur_target[0] = ma;
+	}
+	if(ch & MD_CH2){
+		cur_target[1] = ma;
+	}
+}
+
+int32_t tc_bemf_est(MD_CH ch){
+	int32_t bemf = 0, i;
+	if(ch == MD_CH1){
+		i = 0;
+	}else if(ch == MD_CH2){
+		i = 1;
+	}else{
+		return 0;
+	}
+	bemf = vol_out[i] - cur_target[i] * gr[i] / 1000;
+	return bemf;
+}
+
 void tc_proc(void){
 	static int64_t cur_prev[2] = {};
 	int64_t ff;
@@ -122,15 +160,18 @@ void tc_proc(void){
 			continue;
 		}
 
-		cur_diff[i] = cur[i] - cur_target[i];
+		cur_diff[i] = cur_target[i] - cur[i];
 		isum[i] += cur_diff[i];
 		if(isum[i] > Isum_max){
 			isum[i] = Isum_max;
 		}else if(isum[i] < -Isum_max){
 			isum[i] = -Isum_max;
 		}
-		ff = cur_target[i] * 1000 / gr[i];	//mV = mA * 1000 / mOhm
-		vol_out[i] = ff + gkp[i] * cur_diff[i] + gkd[i] * (cur_diff[i] - cur_prev[i]) + gki[i] * isum[i];
+		ff = cur_target[i] * gr[i] / 1000;	//mV = mA * mOhm / 1000
+		vol_out[i] = ff
+				+ gkp[i] * cur_diff[i] / gkp_div[i]
+				+ gkd[i] * (cur_diff[i] - cur_prev[i]) * tc_freq[i] / gkd_div[i]
+				+ gki[i] * isum[i] / tc_freq[i] / gki_div[i];
 		pwm_set_mv(i == 0 ? MD_CH1: MD_CH2, vol_out[i]);
 	}
 
