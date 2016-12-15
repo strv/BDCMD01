@@ -53,6 +53,7 @@
 #include "LSM6DS3_Driver.h"
 #include "S24C02D_Driver.h"
 #include "encoder.h"
+#include "torque_cntl.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -148,6 +149,38 @@ UU_ConsoleCommand enc_read_cmd = {
 	"ENC\r\n\
 	Get raw encoder value"
 };
+
+bool tc_en(int32_t argc, int32_t* argv);
+UU_ConsoleCommand tc_en_cmd = {
+	"TCEN",
+	tc_en,
+	"TC_EN [ch]\r\n\
+	Enable a torque controller"
+};
+
+bool ccmd(int32_t argc, int32_t* argv);
+UU_ConsoleCommand ccmd_cmd = {
+	"CCMD",
+	ccmd,
+	"CCMD [ch] [mA]\r\n\
+	Set target output current in [mA] for [ch]. [ch] is 1 , 2 or 3. 3 is both."
+};
+
+bool tc_gain(int32_t argc, int32_t* argv);
+UU_ConsoleCommand tc_gain_cmd = {
+	"TCGAIN",
+	tc_gain,
+	"TCGAIN [ch] [kp] [ki] [kd]\r\n\
+	Set PID gain to [ch]. [ch] is 1 , 2 or 3. 3 is both."
+};
+
+bool tc_bemf(int32_t argc, int32_t* argv);
+UU_ConsoleCommand tc_bemf_cmd = {
+	"BEMF",
+	tc_bemf,
+	"BEMF [ch]\r\n\
+	Get BEMF value of [ch]. [ch] is 1 or 2"
+};
 /* USER CODE END 0 */
 
 int main(void)
@@ -209,6 +242,8 @@ int main(void)
   pwm_enable();
   xputs("Enable PWM\r\n");
 
+  tc_init();
+
   IMU_init();
   eeprom_init(0xA0);
   if(HAL_OK != eeprom_write_page(0x00, buf)){
@@ -247,6 +282,10 @@ int main(void)
   uu_push_command(&vcmd_cmd);
   uu_push_command(&imu_read_cmd);
   uu_push_command(&enc_read_cmd);
+  uu_push_command(&tc_en_cmd);
+  uu_push_command(&ccmd_cmd);
+  uu_push_command(&tc_gain_cmd);
+  uu_push_command(&tc_bemf_cmd);
   adc_cur_cal_start();
   /* USER CODE END 2 */
 
@@ -459,6 +498,61 @@ bool imu_read(int32_t argc, int32_t* argv){
 
 bool enc_read(int32_t argc, int32_t* argv){
 	xprintf("ENC1:%6d ENC2:%6d\r\n",(int32_t)encoder_get(MD_CH1), (int32_t)encoder_get(MD_CH2));
+	return true;
+}
+
+bool tc_en(int32_t argc, int32_t* argv){
+	if(argc != 1){
+		return false;
+	}
+	if(argv[0] > MD_CH_MAX){
+		return false;
+	}
+
+	tc_enable(argv[0]);
+	xputs("Enable torque controller.\r\n");
+	return true;
+}
+
+bool ccmd(int32_t argc, int32_t* argv){
+	if(argc != 2){
+		return false;
+	}
+	if(argv[0] > MD_CH_MAX){
+		return false;
+	}
+
+	tc_set_ma(argv[0], argv[1]);
+	xprintf("Set target voltage to %d\r\n", argv[1]);
+	return true;
+}
+
+bool tc_gain(int32_t argc, int32_t* argv){
+	if(argc != 4){
+		return false;
+	}
+	if(argv[0] > MD_CH_MAX){
+		return false;
+	}
+
+	tc_set_gain(argv[0], argv[1], argv[2], argv[3]);
+	xputs("Set torque gain to...\r\n");
+	xprintf("kp : %d\r\n", argv[1]);
+	xprintf("ki : %d\r\n", argv[2]);
+	xprintf("kd : %d\r\n", argv[3]);
+	return true;
+}
+
+bool tc_bemf(int32_t argc, int32_t* argv){
+	if(argc != 1){
+		return false;
+	}
+	if(argv[0] > MD_CH12){
+		return false;
+	}
+
+	tc_bemf_est(argv[0]);
+	xprintf("BEMF [%d] : %d\r\n", argv[0], tc_bemf_est(argv[0]));
 	return true;
 }
 /* USER CODE END 4 */
