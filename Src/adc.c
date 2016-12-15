@@ -604,6 +604,18 @@ void adc_cur_cal_start(void){
 void adc_cur_cal_stop(void){
 	do_cur_long_cal = false;
 }
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
+	if(hadc->Instance == ADC1){
+
+	}else if(hadc->Instance == ADC2){
+
+	}else if(hadc->Instance == ADC3){
+
+	}else if(hadc->Instance == ADC4){
+
+	}
+}
 /* USER CODE END 1 */
 
 /**
