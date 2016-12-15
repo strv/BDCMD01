@@ -48,14 +48,24 @@ void pwm_set_duty(MD_CH ch, int32_t percent){
 	}
 
 	if(ch & MD_CH1){
-		next_ccr[0] = percent * PWM1_Period / 100 / 2;
-		setCCR_1A( next_ccr[0] + PWM1_Period / 2);
-		setCCR_1B(-next_ccr[0] + PWM1_Period / 2);
+		next_ccr[0] = percent * PWM1_Period / 100;
+		if(next_ccr[0] > 0){
+			setCCR_1A(0);
+			setCCR_1B(next_ccr[0]);
+		}else{
+			setCCR_1A(-next_ccr[0]);
+			setCCR_1B(0);
+		}
 	}
 	if(ch & MD_CH2){
-		next_ccr[1] = percent * PWM2_Period / 100 / 2;
-		setCCR_2A(-next_ccr[1] + PWM2_Period / 2);
-		setCCR_2B( next_ccr[1] + PWM2_Period / 2);
+		next_ccr[1] = percent * PWM2_Period / 100;
+		if(next_ccr[1] > 0){
+			setCCR_2B(0);
+			setCCR_2A(next_ccr[1]);
+		}else{
+			setCCR_2B(-next_ccr[1]);
+			setCCR_2A(0);
+		}
 	}
 }
 
@@ -91,8 +101,13 @@ void PWM1_IRQ_Handler(void){
 		if(vcmd_interval_cnt[0] >= Vcmd_interval){
 			vcmd_interval_cnt[0] = 0;
 			pres_vb = adc_vbatt();
-			setCCR_1A( vcmd_target[0] * Pwm1_ccr_center / pres_vb + Pwm1_ccr_center);
-			setCCR_1B(-vcmd_target[0] * Pwm1_ccr_center / pres_vb + Pwm1_ccr_center);
+			if(vcmd_target[0] > 0){
+				setCCR_1A(0);
+				setCCR_1B(vcmd_target[0] * Pwm1_ccr_max / pres_vb);
+			}else{
+				setCCR_1A(-vcmd_target[0] * Pwm1_ccr_max / pres_vb);
+				setCCR_1B(0);
+			}
 		}
 		PWM1_TIM->SR &= ~(TIM_SR_UIF_Msk);
 	}
@@ -104,8 +119,13 @@ void PWM2_IRQ_Handler(void){
 		if(vcmd_interval_cnt[1] >= Vcmd_interval){
 			vcmd_interval_cnt[1] = 0;
 			pres_vb = adc_vbatt();
-			setCCR_2A(-vcmd_target[1] * Pwm1_ccr_center / pres_vb + Pwm1_ccr_center);
-			setCCR_2B( vcmd_target[1] * Pwm1_ccr_center / pres_vb + Pwm1_ccr_center);
+			if(vcmd_target[1] > 0){
+				setCCR_2A(0);
+				setCCR_2B(vcmd_target[1] * Pwm2_ccr_max / pres_vb);
+			}else{
+				setCCR_2A(-vcmd_target[1] * Pwm2_ccr_max / pres_vb);
+				setCCR_2B(0);
+			}
 		}
 		PWM2_TIM->SR &= ~(TIM_SR_UIF_Msk);
 	}
