@@ -59,6 +59,7 @@ void MX_DAC_Init(void);
 /* USER CODE BEGIN Prototypes */
 void dac_start(void);
 void dac_set(uint16_t ch, uint16_t val);
+void dac_set_mv(uint16_t ch, int32_t mv);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
