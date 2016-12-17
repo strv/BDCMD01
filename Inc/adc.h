@@ -53,7 +53,7 @@ extern ADC_HandleTypeDef hadc3;
 extern ADC_HandleTypeDef hadc4;
 
 /* USER CODE BEGIN Private defines */
-#define ADC_BUF_LEN (128)
+#define ADC_BUF_LEN (48)
 #define ADC1_CH_NUM	(2)
 #define ADC2_CH_NUM	(1)
 #define ADC3_CH_NUM	(1)
