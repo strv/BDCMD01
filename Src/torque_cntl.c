@@ -10,15 +10,18 @@
 #include "adc.h"
 #include "pwm.h"
 #include "tim.h"
+#include "dac.h"
 
 static const int64_t Isum_max = 100000;
-static const int64_t tc_freq[2] = {20*1000, 20*1000};
+static const int64_t tc_freq[2] = {10*1000, 10*1000};
 static int64_t gkp[2], gki[2], gkd[2];
 static int64_t gkp_div[2], gki_div[2], gkd_div[2];
 static int32_t gkt[2];
-static int32_t gl[2], gr[2];		//mH, mOhm
+static int32_t gl[2], gr[2];		//uH, mOhm
+static int32_t gramp[2];
 static int64_t isum[2] = {};
-static int64_t cur_target[2] = {};	//mA
+static int32_t cur_target[2] = {};	//mA
+static int32_t cur_target_tmp[2] = {};	//uA
 static int64_t vol_out[2] = {};		//mV
 static bool do_tc[2] = {false, false};
 
@@ -27,10 +30,13 @@ void tc_init(void){
 	gki_div[0] = 0xFF;
 	gkd_div[0] = 0xFF;
 	gr[0] = 1000;
+	gl[0] = 500;
 	gkp_div[1] = 0xFF;
 	gki_div[1] = 0xFF;
 	gkd_div[1] = 0xFF;
 	gr[1] = 1000;
+	gl[1] = 500;
+	tc_set_ramp(MD_CH12, 1000);
 	control_tim_start();
 }
 
@@ -71,6 +77,37 @@ void tc_set_motor_param(MD_CH ch, int32_t l, int32_t r){
 		gl[0] = l;
 		gr[0] = r;
 	}
+	if(ch & MD_CH2){
+		gl[1] = l;
+		gr[1] = r;
+	}
+}
+
+/**
+ * @param[in] ramp : [A/sec]
+ */
+void tc_set_ramp(MD_CH ch, int32_t ramp){
+	if(ch & MD_CH1){
+		if(gl[0] == 0){
+			gramp[0] = ramp * 1000 / tc_freq[0]; // A/sec to mA/tick
+		}
+	}
+	if(ch & MD_CH2){
+		if(gl[1] == 0){
+			gramp[1] = ramp * 1000 / tc_freq[1]; // A/sec to mA/tick
+		}
+	}
+}
+
+void tc_set_gain_by_lsm(MD_CH ch, int32_t kc, int32_t fc){
+	int32_t kp, ki, kd;
+#if 1
+	kp = kc * 45 / 100;
+	ki = kp * fc * 1000 / 833;
+	kd = 0;
+#else
+#endif
+	tc_set_gain(ch, kp, ki, kd);
 }
 
 void tc_set_gain(MD_CH ch, int32_t kp, int32_t ki, int32_t kd){
@@ -150,8 +187,11 @@ int32_t tc_bemf_est(MD_CH ch){
 
 void tc_proc(void){
 	static int64_t cur_prev[2] = {};
+	static int32_t cur_target_prev[2] = {};
 	int64_t ff;
-	int64_t cur[2], cur_diff[2];
+	int32_t cur[2];
+	int32_t target;
+	int64_t cur_diff[2];
 	cur[0] = adc_cur1();
 	cur[1] = adc_cur2();
 
@@ -160,18 +200,48 @@ void tc_proc(void){
 			continue;
 		}
 
-		cur_diff[i] = cur_target[i] - cur[i];
+		target = cur_target[i];
+		if(gramp[i] > 0){
+			if(target > cur_target_tmp[i]){
+				cur_target_tmp[i] += gramp[i];
+				if(cur_target_tmp[i] > target){
+					cur_target_tmp[i] = target;
+				}
+			}else if(target < cur_target_tmp[i]){
+				cur_target_tmp[i] -= gramp[i];
+				if(cur_target_tmp[i] < target){
+					cur_target_tmp[i] = target;
+				}
+			}
+			cur_diff[i] = cur_target_tmp[i] - cur[i];
+		}else{
+			cur_diff[i] = target - cur[i];
+		}
+
 		isum[i] += cur_diff[i];
 		if(isum[i] > Isum_max){
 			isum[i] = Isum_max;
 		}else if(isum[i] < -Isum_max){
 			isum[i] = -Isum_max;
 		}
-		ff = cur_target[i] * gr[i] / 1000;	//mV = mA * mOhm / 1000
+
+		ff = target * gr[i] / 1000
+				+ (target - cur_target_prev[i]) * gl[i] / 1000000;
+		//mV = mA * mOhm / 1000 + d(mA)/dt * uH / 1000000
+
 		vol_out[i] = ff
 				+ gkp[i] * cur_diff[i] / gkp_div[i]
 				+ gkd[i] * (cur_diff[i] - cur_prev[i]) * tc_freq[i] / gkd_div[i]
 				+ gki[i] * isum[i] / tc_freq[i] / gki_div[i];
+
+		if(i == 0){
+			dac_set_mv(0, cur[0] + 3300 / 2);
+			dac_set_mv(1, vol_out[i] / 10 + 3300 / 2);
+		}
+
+		cur_prev[i] = cur_diff[i];
+		cur_target_prev[i] = target;
+
 		pwm_set_mv(i == 0 ? MD_CH1: MD_CH2, vol_out[i]);
 	}
 
