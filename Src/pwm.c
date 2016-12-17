@@ -70,6 +70,12 @@ void pwm_set_duty(MD_CH ch, int32_t percent){
 }
 
 void pwm_set_mv(MD_CH ch, int32_t mv){
+	int32_t pres_vb = adc_vbatt() * 95 / 100;
+	if(mv > pres_vb){
+		mv = pres_vb;
+	}else if(mv < -pres_vb){
+		mv = -pres_vb;
+	}
 	if(ch & MD_CH1){
 		vcmd_target[0] = mv;
 	}
