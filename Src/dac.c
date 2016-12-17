@@ -151,6 +151,15 @@ void dac_set(uint16_t ch, uint16_t val){
 	}
 }
 
+void dac_set_mv(uint16_t ch, int32_t mv){
+	if(mv > 3300 || mv < 0){
+		return;
+	}
+	uint16_t val = mv * 4095 / 3300;
+	dac_set(ch, val);
+}
+
+
 /* USER CODE END 1 */
 
 /**
