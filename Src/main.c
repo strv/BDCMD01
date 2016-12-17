@@ -174,6 +174,16 @@ UU_ConsoleCommand tc_gain_cmd = {
 	Set PID gain to [ch]. [ch] is 1 , 2 or 3. 3 is both."
 };
 
+bool tc_lsm(int32_t argc, int32_t* argv);
+UU_ConsoleCommand tc_lsm_cmd = {
+	"TCLSM",
+	tc_lsm,
+	"TCLSM [ch] [kc] [fc]\r\n\
+	Set PID gain by Limit Sensitibity Method to [ch]. [ch] is 1 , 2 or 3. 3 is both.\r\n\
+	kc : limit kp\r\n\
+	fc : vibration freq[Hz]"
+};
+
 bool tc_bemf(int32_t argc, int32_t* argv);
 UU_ConsoleCommand tc_bemf_cmd = {
 	"BEMF",
@@ -285,6 +295,7 @@ int main(void)
   uu_push_command(&tc_en_cmd);
   uu_push_command(&ccmd_cmd);
   uu_push_command(&tc_gain_cmd);
+  uu_push_command(&tc_lsm_cmd);
   uu_push_command(&tc_bemf_cmd);
   adc_cur_cal_start();
   /* USER CODE END 2 */
@@ -327,8 +338,6 @@ int main(void)
 
 		  xprintf("ENC1:%6d ENC2:%6d\r\n", encoder_get(MD_CH1), encoder_get(MD_CH2));
 		   */
-		  dac_set(0, tick_now);
-		  dac_set(1, tick_now * 2);
 
 		  tick_last += Interval;
 	  }
@@ -540,6 +549,25 @@ bool tc_gain(int32_t argc, int32_t* argv){
 	xprintf("kp : %d\r\n", argv[1]);
 	xprintf("ki : %d\r\n", argv[2]);
 	xprintf("kd : %d\r\n", argv[3]);
+	return true;
+}
+
+bool tc_lsm(int32_t argc, int32_t* argv){
+	if(argc != 3){
+		return false;
+	}
+	if(argv[0] > MD_CH_MAX){
+		return false;
+	}
+
+	int32_t p,i,d;
+	tc_set_gain_by_lsm(argv[0], argv[1], argv[2]);
+	tc_get_gain(argv[0], &p, &i, &d);
+	xputs("Set torque gain to...\r\n");
+	xprintf("kp : %d\r\n", p);
+	xprintf("ki : %d\r\n", i);
+	xprintf("kd : %d\r\n", d);
+
 	return true;
 }
 
