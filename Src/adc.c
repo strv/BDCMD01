@@ -486,11 +486,11 @@ void adc_start(void){
 
 uint32_t adc_get(ADC_CH ch){
 	uint32_t i;
-	volatile uint32_t i_end;
-	volatile uint32_t ret_val = 0;
-	volatile uint16_t* p_buf;
-	volatile uint32_t offset = 0;
-	volatile uint32_t tick = 1;
+	uint32_t i_end;
+	uint32_t ret_val = 0;
+	uint16_t* p_buf;
+	uint32_t offset = 0;
+	uint32_t tick = 1;
 
 	switch(ch){
 	case ADC_TEMP:
