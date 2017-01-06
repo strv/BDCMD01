@@ -54,6 +54,7 @@
 #include "S24C02D_Driver.h"
 #include "encoder.h"
 #include "torque_cntl.h"
+#include "speed_cntl.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -75,6 +76,8 @@ void Error_Handler(void);
 const uint32_t Interval = 50;
 volatile uint32_t tick_last = 0;
 volatile uint32_t tick_now = 0;
+int32_t rpm_log_num = 0;
+
 int32_t led_pos = 1;
 uint8_t buf[] = {
 		0x00,
@@ -166,6 +169,14 @@ UU_ConsoleCommand ccmd_cmd = {
 	Set target output current in [mA] for [ch]. [ch] is 1 , 2 or 3. 3 is both."
 };
 
+bool tcmd(int32_t argc, int32_t* argv);
+UU_ConsoleCommand tcmd_cmd = {
+	"TCMD",
+	tcmd,
+	"TCMD [ch] [uNm]\r\n\
+	Set target output torque in [uNm] for [ch]. [ch] is 1 , 2 or 3. 3 is both."
+};
+
 bool tc_gain(int32_t argc, int32_t* argv);
 UU_ConsoleCommand tc_gain_cmd = {
 	"TCGAIN",
@@ -191,10 +202,60 @@ UU_ConsoleCommand tc_bemf_cmd = {
 	"BEMF [ch]\r\n\
 	Get BEMF value of [ch]. [ch] is 1 or 2"
 };
+
+bool sc_en(int32_t argc, int32_t* argv);
+UU_ConsoleCommand sc_en_cmd = {
+	"SCEN",
+	sc_en,
+	"SC_EN [ch]\r\n\
+	Enable a speed controller"
+};
+
+bool rpmcmd(int32_t argc, int32_t* argv);
+UU_ConsoleCommand rpmcmd_cmd = {
+	"RPM",
+	rpmcmd,
+	"RPM [ch] [rpm]\r\n\
+	Set target speed in [rpm] for [ch]. [ch] is 1 , 2 or 3. 3 is both."
+};
+
+bool sc_gain(int32_t argc, int32_t* argv);
+UU_ConsoleCommand sc_gain_cmd = {
+	"SCGAIN",
+	sc_gain,
+	"SCGAIN [ch] [kp] [ki] [kd]\r\n\
+	Set PID gain to [ch]. [ch] is 1 , 2 or 3. 3 is both."
+};
+
+bool sc_lsm(int32_t argc, int32_t* argv);
+UU_ConsoleCommand sc_lsm_cmd = {
+	"SCLSM",
+	sc_lsm,
+	"SCLSM [ch] [kc] [fc]\r\n\
+	Set PID gain by Limit Sensitibity Method to [ch]. [ch] is 1 , 2 or 3. 3 is both.\r\n\
+	kc : limit kp\r\n\
+	fc : vibration freq[Hz]"
+};
+
+bool clk_info(int32_t argc, int32_t* argv);
+UU_ConsoleCommand clk_cmd = {
+	"CLK",
+	clk_info,
+	"CLK\r\n\
+	Get Clock information"
+};
+
+bool rpm_log(int32_t argc, int32_t* argv);
+UU_ConsoleCommand rpm_log_cmd = {
+	"RPMLOG",
+	rpm_log,
+	"RPMLOG [number]\r\n\
+	Start RPM log"
+};
 /* USER CODE END 0 */
 
 int main(void)
-{
+ {
 
   /* USER CODE BEGIN 1 */
   /* USER CODE END 1 */
@@ -226,6 +287,7 @@ int main(void)
   MX_TIM6_Init();
   MX_TIM8_Init();
   MX_USART2_UART_Init();
+  MX_TIM7_Init();
 
   /* USER CODE BEGIN 2 */
   led_init();
@@ -253,6 +315,7 @@ int main(void)
   xputs("Enable PWM\r\n");
 
   tc_init();
+  sc_init();
 
   IMU_init();
   eeprom_init(0xA0);
@@ -292,11 +355,20 @@ int main(void)
   uu_push_command(&vcmd_cmd);
   uu_push_command(&imu_read_cmd);
   uu_push_command(&enc_read_cmd);
+
   uu_push_command(&tc_en_cmd);
   uu_push_command(&ccmd_cmd);
+  uu_push_command(&tcmd_cmd);
   uu_push_command(&tc_gain_cmd);
   uu_push_command(&tc_lsm_cmd);
   uu_push_command(&tc_bemf_cmd);
+
+  uu_push_command(&sc_en_cmd);
+  uu_push_command(&rpmcmd_cmd);
+  uu_push_command(&sc_gain_cmd);
+  uu_push_command(&sc_lsm_cmd);
+  uu_push_command(&clk_cmd);
+  uu_push_command(&rpm_log_cmd);
   adc_cur_cal_start();
   /* USER CODE END 2 */
 
@@ -320,6 +392,11 @@ int main(void)
 		  led_pos <<= 1;
 		  if(led_pos > LED3){
 			  led_pos = LED1;
+		  }
+
+		  if(rpm_log_num > 0){
+			  rpm_log_num--;
+			  xprintf("%d,%d,%d\r\n", sc_get_speed_bemf(MD_CH1), sc_get_speed_enc(MD_CH1),adc_cur1());
 		  }
 		  /*
 		  xputs("\r\n");
@@ -532,7 +609,20 @@ bool ccmd(int32_t argc, int32_t* argv){
 	}
 
 	tc_set_ma(argv[0], argv[1]);
-	xprintf("Set target voltage to %d\r\n", argv[1]);
+	xprintf("Set target current to %d\r\n", argv[1]);
+	return true;
+}
+
+bool tcmd(int32_t argc, int32_t* argv){
+	if(argc != 2){
+		return false;
+	}
+	if(argv[0] > MD_CH_MAX){
+		return false;
+	}
+
+	tc_set_trq(argv[0], argv[1]);
+	xprintf("Set target torque to %d\r\n", argv[1]);
 	return true;
 }
 
@@ -581,6 +671,90 @@ bool tc_bemf(int32_t argc, int32_t* argv){
 
 	tc_bemf_est(argv[0]);
 	xprintf("BEMF [%d] : %d\r\n", argv[0], tc_bemf_est(argv[0]));
+	return true;
+}
+
+bool sc_en(int32_t argc, int32_t* argv){
+	if(argc != 1){
+		return false;
+	}
+	if(argv[0] > MD_CH_MAX){
+		return false;
+	}
+
+	sc_enable(argv[0]);
+	xputs("Enabled Speed controller.\r\n");
+	return true;
+}
+
+bool rpmcmd(int32_t argc, int32_t* argv){
+	if(argc == 0){
+		xprintf("BEMF RPM : %6d %6d\r\n", sc_get_speed_bemf(MD_CH1), sc_get_speed_bemf(MD_CH2));
+		xprintf("ENC  RPM : %6d %6d\r\n", sc_get_speed_enc(MD_CH1), sc_get_speed_enc(MD_CH2));
+		return true;
+	}
+
+	if(argc != 2){
+		return false;
+	}
+	if(argv[0] > MD_CH_MAX){
+		return false;
+	}
+
+	sc_set_speed(argv[0], argv[1]);
+	xprintf("Set target speed to %d [rpm]\r\n", argv[1]);
+	return true;
+}
+
+bool sc_gain(int32_t argc, int32_t* argv){
+	if(argc != 4){
+		return false;
+	}
+	if(argv[0] > MD_CH_MAX){
+		return false;
+	}
+
+	sc_set_gain(argv[0], argv[1], argv[2], argv[3]);
+	xputs("Set torque gain to...\r\n");
+	xprintf("kp : %d\r\n", argv[1]);
+	xprintf("ki : %d\r\n", argv[2]);
+	xprintf("kd : %d\r\n", argv[3]);
+	return true;
+}
+
+bool sc_lsm(int32_t argc, int32_t* argv){
+	if(argc != 3){
+		return false;
+	}
+	if(argv[0] > MD_CH_MAX){
+		return false;
+	}
+
+	int32_t p,i,d;
+	sc_set_gain_by_lsm(argv[0], argv[1], argv[2]);
+	sc_get_gain(argv[0], &p, &i, &d);
+	xputs("Set torque gain to...\r\n");
+	xprintf("kp : %d\r\n", p);
+	xprintf("ki : %d\r\n", i);
+	xprintf("kd : %d\r\n", d);
+
+	return true;
+}
+
+bool clk_info(int32_t argc, int32_t* argv){
+	xprintf("SysClockFreq %d\r\n", HAL_RCC_GetSysClockFreq());
+	xprintf("HCLKFreq %d\r\n", HAL_RCC_GetHCLKFreq());
+	xprintf("PCLK1Freq %d\r\n", HAL_RCC_GetPCLK1Freq());
+	xprintf("PCLK2Freq %d\r\n", HAL_RCC_GetPCLK2Freq());
+	return true;
+}
+
+bool rpm_log(int32_t argc, int32_t* argv){
+	if(argc != 1){
+		return false;
+	}
+	xprintf("START LOG\r\n");
+	rpm_log_num = argv[0];
 	return true;
 }
 /* USER CODE END 4 */
