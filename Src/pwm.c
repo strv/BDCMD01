@@ -70,12 +70,6 @@ void pwm_set_duty(MD_CH ch, int32_t percent){
 }
 
 void pwm_set_mv(MD_CH ch, int32_t mv){
-	int32_t pres_vb = adc_vbatt() * 95 / 100;
-	if(mv > pres_vb){
-		mv = pres_vb;
-	}else if(mv < -pres_vb){
-		mv = -pres_vb;
-	}
 	if(ch & MD_CH1){
 		vcmd_target[0] = mv;
 	}
@@ -126,11 +120,11 @@ void PWM2_IRQ_Handler(void){
 			vcmd_interval_cnt[1] = 0;
 			pres_vb = adc_vbatt();
 			if(vcmd_target[1] > 0){
-				setCCR_2A(0);
-				setCCR_2B(vcmd_target[1] * Pwm2_ccr_max / pres_vb);
-			}else{
-				setCCR_2A(-vcmd_target[1] * Pwm2_ccr_max / pres_vb);
 				setCCR_2B(0);
+				setCCR_2A(vcmd_target[1] * Pwm2_ccr_max / pres_vb);
+			}else{
+				setCCR_2B(-vcmd_target[1] * Pwm2_ccr_max / pres_vb);
+				setCCR_2A(0);
 			}
 		}
 		PWM2_TIM->SR &= ~(TIM_SR_UIF_Msk);
