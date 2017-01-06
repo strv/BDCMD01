@@ -7,35 +7,44 @@
 
 #include "torque_cntl.h"
 #include <stdbool.h>
+#include "main.h"
 #include "adc.h"
 #include "pwm.h"
 #include "tim.h"
 #include "dac.h"
 
-static const int64_t Isum_max = 100000;
-static const int64_t tc_freq[2] = {10*1000, 10*1000};
-static int64_t gkp[2], gki[2], gkd[2];
-static int64_t gkp_div[2], gki_div[2], gkd_div[2];
-static int32_t gkt[2];
+static const int32_t Isum_max = 100000;
+static int32_t tc_freq;
+static int32_t gkp[2], gki[2], gkd[2];
+static const int32_t gainQ = 8;
+static int32_t gkt[2];				//uNm/A
 static int32_t gl[2], gr[2];		//uH, mOhm
 static int32_t gramp[2];
-static int64_t isum[2] = {};
+static int32_t isum[2] = {};
 static int32_t cur_target[2] = {};	//mA
 static int32_t cur_target_tmp[2] = {};	//uA
-static int64_t vol_out[2] = {};		//mV
+static int32_t vol_out[2] = {};		//mV
+static int32_t vol_brush[2] = {};
+static int32_t bemf[2] = {};		//mV
 static bool do_tc[2] = {false, false};
 
 void tc_init(void){
-	gkp_div[0] = 0xFF;
-	gki_div[0] = 0xFF;
-	gkd_div[0] = 0xFF;
-	gr[0] = 1000;
-	gl[0] = 500;
-	gkp_div[1] = 0xFF;
-	gki_div[1] = 0xFF;
-	gkd_div[1] = 0xFF;
-	gr[1] = 1000;
-	gl[1] = 500;
+	tc_freq = HAL_RCC_GetSysClockFreq() / (TC_Period);
+
+	tc_set_motor_param(MD_CH1, 24310, 20260);	//371 motor
+	tc_set_kt(MD_CH1, 12200);
+	tc_set_gain_by_lsm(MD_CH1, 50000, 1800);
+	vol_brush[0] = 300;
+/*
+	tc_set_motor_param(MD_CH12, 420, 5000);		//TG-21R
+	tc_set_kt(MD_CH12, 16333);
+	tc_set_gain_by_lsm(MD_CH1, 1200, 1350);
+*/
+
+	tc_set_motor_param(MD_CH2, 75, 110);		//GT tune
+	tc_set_kt(MD_CH2, 0);
+	tc_set_gain_by_lsm(MD_CH2, 100, 1200);
+
 	tc_set_ramp(MD_CH12, 1000);
 	control_tim_start();
 }
@@ -63,6 +72,9 @@ void tc_disable(MD_CH ch){
 	}
 }
 
+/**
+ * @param[in] kt : uNm/A
+ */
 void tc_set_kt(MD_CH ch, int32_t kt){
 	if(ch & MD_CH1){
 		gkt[0] = kt;
@@ -89,12 +101,12 @@ void tc_set_motor_param(MD_CH ch, int32_t l, int32_t r){
 void tc_set_ramp(MD_CH ch, int32_t ramp){
 	if(ch & MD_CH1){
 		if(gl[0] == 0){
-			gramp[0] = ramp * 1000 / tc_freq[0]; // A/sec to mA/tick
+			gramp[0] = ramp * 1000 / tc_freq; // A/sec to mA/tick
 		}
 	}
 	if(ch & MD_CH2){
 		if(gl[1] == 0){
-			gramp[1] = ramp * 1000 / tc_freq[1]; // A/sec to mA/tick
+			gramp[1] = ramp * 1000 / tc_freq; // A/sec to mA/tick
 		}
 	}
 }
@@ -144,19 +156,19 @@ void tc_get_gain(MD_CH ch, int32_t* pkp, int32_t* pki, int32_t* pkd){
 
 /**
  *
- * @param	torque[in] : Target torque value in mNm/mA
+ * @param	torque[in] : Target torque value in uNm
 **/
 void tc_set_trq(MD_CH ch, int32_t torque){
 	if(ch & MD_CH1){
 		if(gkt[0] != 0){
-			cur_target[0] = torque / gkt[0];
+			cur_target[0] = torque * 1000 / gkt[0];	//mA = uNm / (uNm / A)
 		}else{
 			cur_target[0] = torque;
 		}
 	}
 	if(ch & MD_CH2){
 		if(gkt[1] != 0){
-			cur_target[1] = torque / gkt[1];
+			cur_target[1] = torque * 1000 / gkt[1];	//mA = uNm / (uNm/A)
 		}else{
 			cur_target[1] = torque;
 		}
@@ -172,8 +184,11 @@ void tc_set_ma(MD_CH ch, int32_t ma){
 	}
 }
 
+/**
+ * @return BEMF value in [mV]
+ */
 int32_t tc_bemf_est(MD_CH ch){
-	int32_t bemf = 0, i;
+	int32_t i;
 	if(ch == MD_CH1){
 		i = 0;
 	}else if(ch == MD_CH2){
@@ -181,8 +196,7 @@ int32_t tc_bemf_est(MD_CH ch){
 	}else{
 		return 0;
 	}
-	bemf = vol_out[i] - cur_target[i] * gr[i] / 1000;
-	return bemf;
+	return bemf[i];
 }
 
 void tc_proc(void){
@@ -192,8 +206,10 @@ void tc_proc(void){
 	int32_t cur[2];
 	int32_t target;
 	int64_t cur_diff[2];
+	int32_t _p,_i,_d;
 	cur[0] = adc_cur1();
 	cur[1] = adc_cur2();
+	int32_t pres_vb = adc_vbatt() * 95 / 100;
 
 	for(int32_t i = 0; i < 2; i++){
 		if(!do_tc[i]){
@@ -227,20 +243,34 @@ void tc_proc(void){
 
 		ff = target * gr[i] / 1000
 				+ (target - cur_target_prev[i]) * gl[i] / 1000000;
+		if(target > 0){
+			ff += vol_brush[i];
+		}else if(target < 0){
+			ff -= vol_brush[i];
+		}
 		//mV = mA * mOhm / 1000 + d(mA)/dt * uH / 1000000
 
-		vol_out[i] = ff
-				+ gkp[i] * cur_diff[i] / gkp_div[i]
-				+ gkd[i] * (cur_diff[i] - cur_prev[i]) * tc_freq[i] / gkd_div[i]
-				+ gki[i] * isum[i] / tc_freq[i] / gki_div[i];
+		_p = gkp[i] * cur_diff[i] / (1 << gainQ);
+		_i = (int64_t)gki[i] * (int64_t)isum[i] / tc_freq / (1 << gainQ);
+		_d = (int64_t)(gkd[i] * (cur_diff[i] - cur_prev[i])) * (int64_t)tc_freq / (1 << gainQ);
+		vol_out[i] = ff + _p + _i + _d;
 
+#if DAC_OUT == DAC_TC
 		if(i == 0){
 			dac_set_mv(0, cur[0] + 3300 / 2);
 			dac_set_mv(1, vol_out[i] / 10 + 3300 / 2);
 		}
-
+#endif
 		cur_prev[i] = cur_diff[i];
 		cur_target_prev[i] = target;
+
+		if(vol_out[i] > pres_vb){
+			vol_out[i] = pres_vb;
+		}else if(vol_out[i] < -pres_vb){
+			vol_out[i] = -pres_vb;
+		}
+
+		bemf[i] = ((vol_out[i] - ff) * 1 + bemf[i] * 7) / 8;
 
 		pwm_set_mv(i == 0 ? MD_CH1: MD_CH2, vol_out[i]);
 	}
