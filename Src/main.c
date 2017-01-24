@@ -4,7 +4,7 @@
   * Description        : Main program body
   ******************************************************************************
   *
-  * COPYRIGHT(c) 2016 STMicroelectronics
+  * COPYRIGHT(c) 2017 STMicroelectronics
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -255,7 +255,7 @@ UU_ConsoleCommand rpm_log_cmd = {
 /* USER CODE END 0 */
 
 int main(void)
- {
+{
 
   /* USER CODE BEGIN 1 */
   /* USER CODE END 1 */
