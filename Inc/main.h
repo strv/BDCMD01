@@ -44,8 +44,8 @@
 #define PWM1_DeadTime 8
 #define PWM2_Period 1800
 #define PWM2_DeadTime 8
-#define TC_Period 72000/15
-#define SC_Period 72000/3
+#define TC_Period (72000/15)
+#define SC_Period (72000/3)
 
 #define LED3_Pin GPIO_PIN_13
 #define LED3_GPIO_Port GPIOC
