@@ -605,6 +605,14 @@ void adc_cur_cal_stop(void){
 	do_cur_long_cal = false;
 }
 
+int32_t adc_cur_offset_delta(int32_t ch, int32_t delta){
+	if(ch == 0 || ch == 1){
+		cur_offset[ch] += delta;
+		return cur_offset[ch];
+	}
+	return 0;
+}
+
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	if(hadc->Instance == ADC1){
 

@@ -94,6 +94,7 @@ void adc_cur_cal(void);
 void adc_cur_reverse(int32_t ch);
 void adc_cur_cal_start(void);
 void adc_cur_cal_stop(void);
+int32_t adc_cur_offset_delta(int32_t ch, int32_t delta);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
