@@ -613,6 +613,19 @@ int32_t adc_cur_offset_delta(int32_t ch, int32_t delta){
 	return 0;
 }
 
+int32_t adc_cur_offset_get(int32_t ch){
+	if(ch == 0 || ch == 1){
+		return cur_offset[ch];
+	}
+	return 0;
+}
+
+void adc_cur_offset_set(int32_t ch, int32_t offset){
+	if(ch == 0 || ch == 1){
+		cur_offset[ch] = offset;
+	}
+}
+
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	if(hadc->Instance == ADC1){
 
