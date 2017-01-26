@@ -41,9 +41,10 @@ void tc_init(void){
 	tc_set_gain_by_lsm(MD_CH1, 1200, 1350);
 */
 
-	tc_set_motor_param(MD_CH2, 75, 110);		//GT tune
+	tc_set_motor_param(MD_CH2, 75, 110 + 50);		//GT tune
 	tc_set_kt(MD_CH2, 0);
 	tc_set_gain_by_lsm(MD_CH2, 100, 1200);
+	vol_brush[1] = 170;
 
 	tc_set_ramp(MD_CH12, 1000);
 	control_tim_start();

@@ -35,7 +35,7 @@ void sc_init(void){
 	sc_set_gain_by_lsm(MD_CH1, 13000, 110);
 */
 
-	sc_set_kw(MD_CH2, 19000 * 10 / 72);		//GT tune
+	sc_set_kw(MD_CH2, 2277);		//GT tune
 	sc_set_gain(MD_CH2, 3000, 6000000, 0);
 
 	sc_set_kw(MD_CH1, 356);					//371
