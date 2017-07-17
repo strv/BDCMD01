@@ -19,7 +19,7 @@ static const int32_t Pwm1_ccr_max = PWM1_Period * PWM_DUTY_MAX / 100;
 static const int32_t Pwm2_ccr_max = PWM2_Period * PWM_DUTY_MAX / 100;
 static const int32_t Pwm1_ccr_center = PWM1_Period * PWM_DUTY_MAX / 100 / 2;
 static const int32_t Pwm2_ccr_center = PWM2_Period * PWM_DUTY_MAX / 100 / 2;
-static const int32_t Vcmd_interval = 10;
+static const int32_t Vcmd_interval = 2;
 static int32_t vcmd_interval_cnt[2] = {};
 static int32_t next_ccr[2] = {};
 static int32_t pres_vb;
@@ -50,21 +50,21 @@ void pwm_set_duty(MD_CH ch, int32_t percent){
 	if(ch & MD_CH1){
 		next_ccr[0] = percent * PWM1_Period / 100;
 		if(next_ccr[0] > 0){
-			setCCR_1A(0);
-			setCCR_1B(next_ccr[0]);
-		}else{
-			setCCR_1A(-next_ccr[0]);
+			setCCR_1A(next_ccr[0]);
 			setCCR_1B(0);
+		}else{
+			setCCR_1A(0);
+			setCCR_1B(-next_ccr[0]);
 		}
 	}
 	if(ch & MD_CH2){
 		next_ccr[1] = percent * PWM2_Period / 100;
 		if(next_ccr[1] > 0){
-			setCCR_2B(0);
-			setCCR_2A(next_ccr[1]);
-		}else{
-			setCCR_2B(-next_ccr[1]);
 			setCCR_2A(0);
+			setCCR_2B(next_ccr[1]);
+		}else{
+			setCCR_2A(-next_ccr[1]);
+			setCCR_2B(0);
 		}
 	}
 }
@@ -95,17 +95,28 @@ void pwm_set_mode(MD_CH ch, PWM_MODE mode){
 	}
 }
 
+static int32_t ccr_tmp1 = 0;
 void PWM1_IRQ_Handler(void){
 	if(PWM1_TIM->SR & TIM_SR_UIF_Msk){
 		vcmd_interval_cnt[0] += vcmd_tick[0];
 		if(vcmd_interval_cnt[0] >= Vcmd_interval){
 			vcmd_interval_cnt[0] = 0;
 			pres_vb = adc_vbatt();
+			ccr_tmp1 = vcmd_target[0] * (PWM1_Period - PWM1_DT_OFST) / pres_vb + PWM1_DT_OFST;
+			if(ccr_tmp1 > Pwm1_ccr_max){
+				ccr_tmp1 = Pwm1_ccr_max;
+			}
+			if(ccr_tmp1 < -Pwm1_ccr_max){
+				ccr_tmp1 = -Pwm1_ccr_max;
+			}
 			if(vcmd_target[0] > 0){
+				setCCR_1A(ccr_tmp1);
+				setCCR_1B(0);
+			}else if(vcmd_target[0] < 0){
 				setCCR_1A(0);
-				setCCR_1B(vcmd_target[0] * Pwm1_ccr_max / pres_vb);
+				setCCR_1B(-ccr_tmp1);
 			}else{
-				setCCR_1A(-vcmd_target[0] * Pwm1_ccr_max / pres_vb);
+				setCCR_1A(0);
 				setCCR_1B(0);
 			}
 		}
@@ -113,18 +124,29 @@ void PWM1_IRQ_Handler(void){
 	}
 }
 
+static int32_t ccr_tmp2 = 0;
 void PWM2_IRQ_Handler(void){
 	if(PWM2_TIM->SR & TIM_SR_UIF_Msk){
 		vcmd_interval_cnt[1] += vcmd_tick[1];
 		if(vcmd_interval_cnt[1] >= Vcmd_interval){
 			vcmd_interval_cnt[1] = 0;
 			pres_vb = adc_vbatt();
+			ccr_tmp2 = vcmd_target[1] * (PWM2_Period - PWM2_DT_OFST) / pres_vb + PWM2_DT_OFST;
+			if(ccr_tmp2 > Pwm2_ccr_max){
+				ccr_tmp2 = Pwm2_ccr_max;
+			}
+			if(ccr_tmp2 < -Pwm2_ccr_max){
+				ccr_tmp2 = -Pwm2_ccr_max;
+			}
 			if(vcmd_target[1] > 0){
-				setCCR_2B(0);
-				setCCR_2A(vcmd_target[1] * Pwm2_ccr_max / pres_vb);
-			}else{
-				setCCR_2B(-vcmd_target[1] * Pwm2_ccr_max / pres_vb);
 				setCCR_2A(0);
+				setCCR_2B(ccr_tmp2);
+			}else if(vcmd_target[1] < 0){
+				setCCR_2A(-ccr_tmp2);
+				setCCR_2B(0);
+			}else{
+				setCCR_2A(0);
+				setCCR_2B(0);
 			}
 		}
 		PWM2_TIM->SR &= ~(TIM_SR_UIF_Msk);
