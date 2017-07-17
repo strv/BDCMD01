@@ -44,6 +44,10 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
+/* Device memo				*/
+/* Flash 256 kB 			*/
+/* SRAM  40 kB				*/
+/* CCM RAM 8 kB				*/
 #include <stdbool.h>
 #include <stdint.h>
 #include "led.h"
@@ -201,6 +205,14 @@ UU_ConsoleCommand tc_bemf_cmd = {
 	tc_bemf,
 	"BEMF [ch]\r\n\
 	Get BEMF value of [ch]. [ch] is 1 or 2"
+};
+
+bool tc_vout(int32_t argc, int32_t* argv);
+UU_ConsoleCommand tc_vout_cmd = {
+	"TCVO",
+	tc_vout,
+	"TCVO [ch]\r\n\
+	Get Vout value of [ch]. [ch] is 1 or 2"
 };
 
 bool sc_en(int32_t argc, int32_t* argv);
@@ -362,6 +374,7 @@ int main(void)
   uu_push_command(&tc_gain_cmd);
   uu_push_command(&tc_lsm_cmd);
   uu_push_command(&tc_bemf_cmd);
+  uu_push_command(&tc_vout_cmd);
 
   uu_push_command(&sc_en_cmd);
   uu_push_command(&rpmcmd_cmd);
@@ -671,6 +684,19 @@ bool tc_bemf(int32_t argc, int32_t* argv){
 
 	tc_bemf_est(argv[0]);
 	xprintf("BEMF [%d] : %d\r\n", argv[0], tc_bemf_est(argv[0]));
+	return true;
+}
+
+bool tc_vout(int32_t argc, int32_t* argv){
+	if(argc != 1){
+		return false;
+	}
+	if(argv[0] > MD_CH12){
+		return false;
+	}
+
+	tc_bemf_est(argv[0]);
+	xprintf("Vout [%d] : %d mV\r\n", argv[0], tc_get_vout(argv[0]));
 	return true;
 }
 
