@@ -41,11 +41,13 @@
 
 /* Private define ------------------------------------------------------------*/
 #define PWM1_Period 1800
-#define PWM1_DeadTime 8
+#define PWM1_DeadTime 2
 #define PWM2_Period 1800
-#define PWM2_DeadTime 8
+#define PWM2_DeadTime 2
 #define TC_Period (72000/15)
 #define SC_Period (72000/3)
+#define PWM1_DT_OFST (1)
+#define PWM2_DT_OFST (2)
 
 #define LED3_Pin GPIO_PIN_13
 #define LED3_GPIO_Port GPIOC
