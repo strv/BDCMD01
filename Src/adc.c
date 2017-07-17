@@ -38,10 +38,14 @@
 #include "dma.h"
 
 /* USER CODE BEGIN 0 */
+#include "arm_math.h"
+
 static uint16_t adc1[ADC_BUF_LEN * ADC1_CH_NUM];
 static uint16_t adc2[ADC_BUF_LEN * ADC2_CH_NUM];
 static uint16_t adc3[ADC_BUF_LEN * ADC3_CH_NUM];
 static uint16_t adc4[ADC_BUF_LEN * ADC4_CH_NUM];
+static int32_t temp1[ADC_BUF_LEN];
+static int32_t temp2[ADC_BUF_LEN];
 static int32_t cur_offset[2] = {};
 static bool do_cur_long_cal = false;
 static int32_t cur_reverse[2] = {1, 1};
@@ -518,7 +522,7 @@ uint32_t adc_get(ADC_CH ch){
 		i_end = ADC_BUF_LEN * ADC4_CH_NUM;
 		p_buf = adc4;
 		offset = 0;
-		tick = ADC4_CH_NUM;
+		tick = ADC4_CH_NUM * 4;
 		break;
 
 	case ADC_REF1:
@@ -557,7 +561,7 @@ uint32_t adc_get(ADC_CH ch){
 		ret_val += *(p_buf + i);
 	}
 
-	return ret_val * (1 << ADC_Q) / ADC_BUF_LEN;
+	return ret_val * (1 << ADC_Q) / ((i_end - offset) / tick);
 }
 
 int32_t adc_vbatt(void){
@@ -567,22 +571,13 @@ int32_t adc_vbatt(void){
 int32_t adc_cur1(void){
 	int32_t i;
 	i = ((int64_t)adc_get(ADC_CUR1) - (int64_t)cur_offset[0]) * 3300LL * 1000LL / 4095 / (1 << ADC_Q) / ADC_CUR_GAIN;
-	return cur_reverse[0] * i;
+	return -i;
 }
 
 int32_t adc_cur2(void){
 	int32_t i;
 	i = ((int64_t)adc_get(ADC_CUR2) - (int64_t)cur_offset[1]) * 3300LL * 1000LL / 4095 / (1 << ADC_Q) / ADC_CUR_GAIN;
-	return cur_reverse[1] * i;
-}
-
-void adc_cur_reverse(int32_t ch){
-	if(ch & 1){
-		cur_reverse[0] = -1;
-	}
-	if(ch & 2){
-		cur_reverse[1] = -1;
-	}
+	return -i;
 }
 
 void adc_cur_cal(void){
@@ -607,7 +602,7 @@ void adc_cur_cal_stop(void){
 
 int32_t adc_cur_offset_delta(int32_t ch, int32_t delta){
 	if(ch == 0 || ch == 1){
-		cur_offset[ch] += delta;
+		cur_offset[ch] += delta * cur_reverse[0];
 		return cur_offset[ch];
 	}
 	return 0;
