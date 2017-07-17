@@ -23,6 +23,7 @@ void tc_get_gain(MD_CH ch, int32_t* pkp, int32_t* pki, int32_t* pkd);
 void tc_set_trq(MD_CH ch, int32_t torque);
 void tc_set_ma(MD_CH ch, int32_t ma);
 int32_t tc_bemf_est(MD_CH ch);
+int32_t tc_get_vout(MD_CH ch);
 void tc_proc(void);
 
 #endif /* TORQUE_CNTL_H_ */

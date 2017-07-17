@@ -16,7 +16,7 @@
 static const int32_t Isum_max = 100000;
 static int32_t tc_freq;
 static int32_t gkp[2], gki[2], gkd[2];
-static const int32_t gainQ = 8;
+static const int32_t gainQ = 10;
 static int32_t gkt[2];				//uNm/A
 static int32_t gl[2], gr[2];		//uH, mOhm
 static int32_t gramp[2];
@@ -27,6 +27,8 @@ static int32_t vol_out[2] = {};		//mV
 static int32_t vol_brush[2] = {};
 static int32_t bemf[2] = {};		//mV
 static bool do_tc[2] = {false, false};
+static int32_t cur_offset[2] = {};
+static const int32_t cur_offset_ki = 1;
 
 void tc_init(void){
 	tc_freq = HAL_RCC_GetSysClockFreq() / (TC_Period);
@@ -41,12 +43,15 @@ void tc_init(void){
 	tc_set_gain_by_lsm(MD_CH1, 1200, 1350);
 */
 
-	tc_set_motor_param(MD_CH2, 75, 110 + 50);		//GT tune
+	tc_set_motor_param(MD_CH2, 75, 200);		//GT tune
 	tc_set_kt(MD_CH2, 0);
 	tc_set_gain_by_lsm(MD_CH2, 100, 1200);
-	vol_brush[1] = 170;
+	vol_brush[1] = 150;
 
 	tc_set_ramp(MD_CH12, 1000);
+
+	cur_offset[0] = adc_cur_offset_get(0);
+	cur_offset[1] = adc_cur_offset_get(1);
 	control_tim_start();
 }
 
@@ -198,6 +203,18 @@ int32_t tc_bemf_est(MD_CH ch){
 		return 0;
 	}
 	return bemf[i];
+}
+
+int32_t tc_get_vout(MD_CH ch){
+	int32_t i;
+	if(ch == MD_CH1){
+		i = 0;
+	}else if(ch == MD_CH2){
+		i = 1;
+	}else{
+		return 0;
+	}
+	return vol_out[i];
 }
 
 void tc_proc(void){
