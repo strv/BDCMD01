@@ -59,6 +59,7 @@
 #include "encoder.h"
 #include "torque_cntl.h"
 #include "speed_cntl.h"
+#include "MadgwickAHRS.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -264,6 +265,15 @@ UU_ConsoleCommand rpm_log_cmd = {
 	"RPMLOG [number]\r\n\
 	Start RPM log"
 };
+
+bool get_pose(int32_t argc, int32_t* argv);
+UU_ConsoleCommand pose_cmd = {
+	"POSE",
+	get_pose,
+	"POSE\r\n\
+	Return current pose of the board"
+};
+
 /* USER CODE END 0 */
 
 int main(void)
@@ -330,6 +340,11 @@ int main(void)
   sc_init();
 
   IMU_init();
+  IMU_set_acc_range(IMU_ACC_2g);
+  IMU_set_gyro_range(IMU_GYRO_125dps);
+  IMU_set_acc_rate(IMU_ACC_1666);
+  IMU_set_gyro_rate(IMU_GYRO_1666);
+
   eeprom_init(0xA0);
   if(HAL_OK != eeprom_write_page(0x00, buf)){
 	  xputs("eep write error\r\n");
@@ -382,7 +397,12 @@ int main(void)
   uu_push_command(&sc_lsm_cmd);
   uu_push_command(&clk_cmd);
   uu_push_command(&rpm_log_cmd);
+  uu_push_command(&pose_cmd);
+
   adc_cur_cal_start();
+
+  Madgwick_init();
+  Madgwick_begin(1000);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -394,7 +414,6 @@ int main(void)
   /* USER CODE BEGIN 3 */
 	  tick_now = HAL_GetTick();
 	  if(tick_now - tick_last >= Interval){
-		  IMU_reflesh();
 		  if(tick_now < 64 * Interval){
 			  adc_cur_cal();
 		  }else{
@@ -781,6 +800,17 @@ bool rpm_log(int32_t argc, int32_t* argv){
 	}
 	xprintf("START LOG\r\n");
 	rpm_log_num = argv[0];
+	return true;
+}
+
+bool get_pose(int32_t argc, int32_t* argv){
+	float r,p,y;
+	int32_t ir, ip, iy;
+	Madgwick_getPose(&r, &p, &y);
+	ir = r;
+	ip = p;
+	iy = y;
+	xprintf("Pose : %d.%3d %d.%3d %d.%3d", ir, (int32_t)((r - ir) * 1000), ip, (int32_t)((r - ip) * 1000), iy, (int32_t)((y - iy) * 1000) );
 	return true;
 }
 /* USER CODE END 4 */

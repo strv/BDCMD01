@@ -36,8 +36,13 @@
 #include "stm32f3xx_it.h"
 
 /* USER CODE BEGIN 0 */
+#include <stdint.h>
 #include "torque_cntl.h"
 #include "speed_cntl.h"
+#include "MadgwickAHRS.h"
+#include "LSM6DS3_Driver.h"
+int32_t ia[3], ig[3];
+float fa[3], fg[3];
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -186,7 +191,16 @@ void SysTick_Handler(void)
   HAL_IncTick();
   HAL_SYSTICK_IRQHandler();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-
+  if(Madgwick_is_init()){
+	  IMU_reflesh();
+	  IMU_get_acc(&ia[0], &ia[1], &ia[2]);
+	  IMU_get_gyro(&ig[0], &ig[1], &ig[2]);
+	  for(int i=0; i<3; i++){
+		  fa[i] = 2. * (float)ia[i] / 65535.;
+		  fg[i] = 125. * (float)ig[i] / 65535.;
+	  }
+	  Madgwick_updateIMU(fg[0], fg[1], fg[2], fa[0], fa[1], fa[2]);
+  }
   /* USER CODE END SysTick_IRQn 1 */
 }
 
@@ -287,7 +301,6 @@ void SPI3_IRQHandler(void)
 void TIM6_DAC_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM6_DAC_IRQn 0 */
-	static int32_t sc_cnt = 0;
   /* USER CODE END TIM6_DAC_IRQn 0 */
   HAL_TIM_IRQHandler(&htim6);
   HAL_DAC_IRQHandler(&hdac);
