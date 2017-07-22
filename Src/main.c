@@ -341,7 +341,7 @@ int main(void)
 
   IMU_init();
   IMU_set_acc_range(IMU_ACC_2g);
-  IMU_set_gyro_range(IMU_GYRO_125dps);
+  IMU_set_gyro_range(IMU_GYRO_245dps);
   IMU_set_acc_rate(IMU_ACC_1666);
   IMU_set_gyro_rate(IMU_GYRO_1666);
 
@@ -402,7 +402,7 @@ int main(void)
   adc_cur_cal_start();
 
   Madgwick_init();
-  Madgwick_begin(1000);
+  Madgwick_begin(1000, 5.0);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -810,7 +810,10 @@ bool get_pose(int32_t argc, int32_t* argv){
 	ir = r;
 	ip = p;
 	iy = y;
-	xprintf("Pose : %d.%3d %d.%3d %d.%3d", ir, (int32_t)((r - ir) * 1000), ip, (int32_t)((r - ip) * 1000), iy, (int32_t)((y - iy) * 1000) );
+	xprintf("Pose : %4d.%03d %4d.%03d %4d.%03d\r\n",
+			ir, abs((int32_t)((r - ir) * 1000)),
+			ip, abs((int32_t)((p - ip) * 1000)),
+			iy, abs((int32_t)((y - iy) * 1000)) );
 	return true;
 }
 /* USER CODE END 4 */

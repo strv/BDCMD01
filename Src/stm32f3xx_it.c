@@ -192,14 +192,14 @@ void SysTick_Handler(void)
   HAL_SYSTICK_IRQHandler();
   /* USER CODE BEGIN SysTick_IRQn 1 */
   if(Madgwick_is_init()){
-	  IMU_reflesh();
 	  IMU_get_acc(&ia[0], &ia[1], &ia[2]);
 	  IMU_get_gyro(&ig[0], &ig[1], &ig[2]);
 	  for(int i=0; i<3; i++){
-		  fa[i] = 2. * (float)ia[i] / 65535.;
-		  fg[i] = 125. * (float)ig[i] / 65535.;
+		  fa[i] = 2. * (float)ia[i] / 32768.;
+		  fg[i] = 245. * (float)ig[i] / 32768.;
 	  }
 	  Madgwick_updateIMU(fg[0], fg[1], fg[2], fa[0], fa[1], fa[2]);
+	  IMU_reflesh();
   }
   /* USER CODE END SysTick_IRQn 1 */
 }
