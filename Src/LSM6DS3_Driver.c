@@ -37,7 +37,7 @@ static GPIO_InitTypeDef GPIO_InitStruct = {
 #define assert() HAL_GPIO_WritePin(SPI_CS_GPIO_Port, SPI_CS_Pin, GPIO_PIN_RESET)
 
 static const uint8_t CTRL_REGS_DEF[] = {
-	/* CTRL1_XL */ (0xA << 4) | (0x0 << 2) | (0x0 << 0), //ODR_XL3 ODR_XL2 ODR_XL1 ODR_XL0 FS_XL1 FS_XL0 BW_XL1 BW_XL0
+	/* CTRL1_XL */ (0x8 << 4) | (0x0 << 2) | (0x0 << 0), //ODR_XL3 ODR_XL2 ODR_XL1 ODR_XL0 FS_XL1 FS_XL0 BW_XL1 BW_XL0
 	/* CTRL2_G  */ (0x8 << 4) | (0x0 << 2) | (0x0 << 1), //ODR_G3 ODR_G2 ODR_G1 ODR_G0 FS_G1 FS_G0 FS_125 0
 	/* CTRL3_C  */ (0x0 << 7) | (0x0 << 6) | (0x0 << 5) | (0x0 << 4) | (0x0 << 3) | (0x1 << 2) | (0x0 << 1) | (0x0 << 0),//BOOT BDU H_LACTIVE PP_OD SIM IF_INC BLE SW_RESET
 	/* CTRL4_C  */ (0x0 << 7) | (0x0 << 6) | (0x0 << 5) | (0x0 << 4) | (0x0 << 3) | (0x1 << 2) | (0x0 << 1) | (0x0 << 0),
@@ -242,19 +242,35 @@ void IMU_init(void){
 }
 
 void IMU_set_acc_range(IMU_ACC_RANGE range){
-
+	uint8_t reg;
+	cmd_read(0x10, &reg, 1);
+	reg &= ~0x0C;
+	reg |= (range << 2) & 0x0C;
+	cmd_write(0x10, &reg, 1);
 }
 
 void IMU_set_gyro_range(IMU_GYRO_RANGE range){
-
+	uint8_t reg;
+	cmd_read(0x11, &reg, 1);
+	reg &= ~0x0E;
+	reg |= (range << 1) & 0x0E;
+	cmd_write(0x11, &reg, 1);
 }
 
 void IMU_set_acc_rate(IMU_ACC_RATE rate){
-
+	uint8_t reg;
+	cmd_read(0x10, &reg, 1);
+	reg &= ~0xF0;
+	reg |= (rate << 4) & 0xF0;
+	cmd_write(0x10, &reg, 1);
 }
 
 void IMU_set_gyro_rate(IMU_GYRO_RATE rate){
-
+	uint8_t reg;
+	cmd_read(0x11, &reg, 1);
+	reg &= ~0xF0;
+	reg |= (rate << 4) & 0xF0;
+	cmd_write(0x11, &reg, 1);
 }
 
 int32_t IMU_get_temp(void){
