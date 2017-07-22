@@ -24,7 +24,7 @@
 // Function declarations
 
 void Madgwick_init(void);
-void Madgwick_begin(float sampleFrequency);
+void Madgwick_begin(float sampleFrequency, float beta);
 void Madgwick_update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
 void Madgwick_updateIMU(float gx, float gy, float gz, float ax, float ay, float az);
 bool Madgwick_is_init(void);

@@ -60,8 +60,9 @@ void Madgwick_init() {
 	inited = true;
 }
 
-void Madgwick_begin(float sampleFrequency) {
+void Madgwick_begin(float sampleFrequency, float beta_) {
 	invSampleFreq = 1.0f / sampleFrequency;
+	beta = beta_;
 }
 
 void Madgwick_update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
