@@ -37,12 +37,11 @@
 
 /* USER CODE BEGIN 0 */
 #include <stdint.h>
+#include "pwm.h"
 #include "torque_cntl.h"
 #include "speed_cntl.h"
 #include "MadgwickAHRS.h"
 #include "LSM6DS3_Driver.h"
-int32_t ia[3], ig[3];
-float fa[3], fg[3];
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -191,16 +190,8 @@ void SysTick_Handler(void)
   HAL_IncTick();
   HAL_SYSTICK_IRQHandler();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-  if(Madgwick_is_init()){
-	  IMU_get_acc(&ia[0], &ia[1], &ia[2]);
-	  IMU_get_gyro(&ig[0], &ig[1], &ig[2]);
-	  for(int i=0; i<3; i++){
-		  fa[i] = 2. * (float)ia[i] / 32768.;
-		  fg[i] = 245. * (float)ig[i] / 32768.;
-	  }
-	  Madgwick_updateIMU(fg[0], fg[1], fg[2], fa[0], fa[1], fa[2]);
-	  IMU_reflesh();
-  }
+  pose_proc();
+  pwm_update_vb();
   /* USER CODE END SysTick_IRQn 1 */
 }
 

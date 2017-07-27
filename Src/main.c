@@ -50,6 +50,7 @@
 /* CCM RAM 8 kB				*/
 #include <stdbool.h>
 #include <stdint.h>
+#include <arm_math.h>
 #include "led.h"
 #include "uart_util.h"
 #include "pwm.h"
@@ -82,6 +83,40 @@ const uint32_t Interval = 50;
 volatile uint32_t tick_last = 0;
 volatile uint32_t tick_now = 0;
 int32_t rpm_log_num = 0;
+
+MotorProfile mtp_PG45775 = {
+	0,
+	"PG45775 24V 6000rpm",
+	4400,		// measured value
+	1865,		// measured value
+	6000,
+	5233 / 24,
+	385,
+	12100,
+	630,
+	24000,
+	30800,
+	0,
+	0,
+	0
+};
+
+MotorProfile mtp_GT_Tuen = {
+	0,
+	"Tamiya GT Tune",
+	200,		// measured value
+	75,			// measured value
+	16400,
+	2277,
+	0,
+	36000,
+	3100,
+	7200,
+	120000,
+	0,
+	0,
+	0
+};
 
 int32_t led_pos = 1;
 uint8_t buf[] = {
@@ -332,6 +367,8 @@ int main(void)
   xputs("Start ADC\r\n");
   dac_start();
   xputs("Start DAC\r\n");
+  dac_set_mv(0, 1000);
+  dac_set_mv(1, 2000);
 
   pwm_enable();
   xputs("Enable PWM\r\n");
@@ -341,7 +378,7 @@ int main(void)
 
   IMU_init();
   IMU_set_acc_range(IMU_ACC_2g);
-  IMU_set_gyro_range(IMU_GYRO_245dps);
+  IMU_set_gyro_range(IMU_GYRO_500dps);
   IMU_set_acc_rate(IMU_ACC_1666);
   IMU_set_gyro_rate(IMU_GYRO_1666);
 
@@ -401,8 +438,7 @@ int main(void)
 
   adc_cur_cal_start();
 
-  Madgwick_init();
-  Madgwick_begin(1000, 5.0);
+  pose_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -498,8 +534,8 @@ void SystemClock_Config(void)
                               |RCC_PERIPHCLK_TIM1|RCC_PERIPHCLK_TIM8
                               |RCC_PERIPHCLK_ADC12|RCC_PERIPHCLK_ADC34;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_SYSCLK;
-  PeriphClkInit.Adc12ClockSelection = RCC_ADC12PLLCLK_DIV1;
-  PeriphClkInit.Adc34ClockSelection = RCC_ADC34PLLCLK_DIV1;
+  PeriphClkInit.Adc12ClockSelection = RCC_ADC12PLLCLK_DIV2;
+  PeriphClkInit.Adc34ClockSelection = RCC_ADC34PLLCLK_DIV2;
   PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_HSI;
   PeriphClkInit.Tim1ClockSelection = RCC_TIM1CLK_PLLCLK;
   PeriphClkInit.Tim8ClockSelection = RCC_TIM8CLK_PLLCLK;
@@ -517,10 +553,152 @@ void SystemClock_Config(void)
   HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
   /* SysTick_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(SysTick_IRQn, 8, 0);
 }
 
 /* USER CODE BEGIN 4 */
+#define BLOCK_SIZE (64)
+#define NUM_TAPS (63)
+int32_t ia[3], ig[3];
+float fa[3], fg[3];
+int32_t ig_ofst[3] = {0, 0, 0};
+int32_t g_cnt = -100;
+arm_fir_instance_f32 fir_struct;
+uint32_t block_size = BLOCK_SIZE;
+float32_t fir_state[BLOCK_SIZE + NUM_TAPS + 1];
+/*
+float32_t fir_coeffs[NUM_TAPS] = {
+		-1.599957890020377e-04,
+		-1.079992893898858e-03,
+		9.980000000000000e-01,
+		-1.079992893898858e-03,
+		-1.599957890020377e-04
+};
+*/
+float32_t fir_coeffs[NUM_TAPS] = {
+		0.000000000000000e+00 ,
+		-2.588688795350144e-05 ,
+		-1.088123368621265e-04 ,
+		-2.560599756378687e-04 ,
+		-4.739466003157051e-04 ,
+		-7.676498064290117e-04 ,
+		-1.141055372585724e-03 ,
+		-1.596628075556499e-03 ,
+		-2.135309159660887e-03 ,
+		-2.756443148364572e-03 ,
+		-3.457736085075439e-03 ,
+		-4.235246636048148e-03 ,
+		-5.083410795294219e-03 ,
+		-5.995100214663904e-03 ,
+		-6.961713457688311e-03 ,
+		-7.973298759509207e-03 ,
+		-9.018706183366089e-03 ,
+		-1.008576641229374e-02 ,
+		-1.116149281773711e-02 ,
+		-1.223230291838822e-02 ,
+		-1.328425489489190e-02 ,
+		-1.430329446959375e-02 ,
+		-1.527550720364601e-02 ,
+		-1.618737111277017e-02 ,
+		-1.702600446166274e-02 ,
+		-1.777940366682992e-02 ,
+		-1.843666641746229e-02 ,
+		-1.898819541024209e-02 ,
+		-1.942587848074459e-02 ,
+		-1.974324139310644e-02 ,
+		-1.993557011055170e-02 ,
+		9.800000000000000e-01 ,
+		-1.993557011055170e-02 ,
+		-1.974324139310644e-02 ,
+		-1.942587848074459e-02 ,
+		-1.898819541024209e-02 ,
+		-1.843666641746229e-02 ,
+		-1.777940366682992e-02 ,
+		-1.702600446166274e-02 ,
+		-1.618737111277017e-02 ,
+		-1.527550720364601e-02 ,
+		-1.430329446959375e-02 ,
+		-1.328425489489190e-02 ,
+		-1.223230291838822e-02 ,
+		-1.116149281773711e-02 ,
+		-1.008576641229374e-02 ,
+		-9.018706183366089e-03 ,
+		-7.973298759509207e-03 ,
+		-6.961713457688311e-03 ,
+		-5.995100214663904e-03 ,
+		-5.083410795294219e-03 ,
+		-4.235246636048148e-03 ,
+		-3.457736085075439e-03 ,
+		-2.756443148364572e-03 ,
+		-2.135309159660887e-03 ,
+		-1.596628075556499e-03 ,
+		-1.141055372585724e-03 ,
+		-7.676498064290117e-04 ,
+		-4.739466003157051e-04 ,
+		-2.560599756378687e-04 ,
+		-1.088123368621265e-04 ,
+		-2.588688795350144e-05 ,
+		0.000000000000000e+00
+};
+float32_t imu_yaw_src[BLOCK_SIZE];
+float32_t imu_yaw_dst[BLOCK_SIZE];
+
+void pose_init(){
+  Madgwick_init();
+  Madgwick_begin(1000, 2.0);
+
+  arm_fir_init_f32(&fir_struct, NUM_TAPS, &fir_coeffs[0], &fir_state[0], block_size);
+}
+
+void pose_zero_yaw(){
+
+}
+
+void pose_proc(){
+  if(!Madgwick_is_init()){
+	  return;
+  }
+  IMU_get_acc(&ia[0], &ia[1], &ia[2]);
+  IMU_get_gyro(&ig[0], &ig[1], &ig[2]);
+
+  if(g_cnt < 0){
+	  g_cnt++;
+  }else if(g_cnt < 250){
+	  ig_ofst[0] += ig[0];
+	  ig_ofst[1] += ig[1];
+	  ig_ofst[2] += ig[2];
+	  g_cnt++;
+  }else if(g_cnt == 250){
+	  ig_ofst[0] /= g_cnt;
+	  ig_ofst[1] /= g_cnt;
+	  ig_ofst[2] /= g_cnt;
+	  xprintf("ig_ofst : %d %d %d\r\n",
+			  (int32_t)(ig_ofst[0]),
+			  (int32_t)(ig_ofst[1]),
+			  (int32_t)(ig_ofst[2]));
+	  g_cnt++;
+  }
+
+  for(int i=0; i<3; i++){
+	  fa[i] = 2. * (float)ia[i] / 32768.;
+	  fg[i] = 500. * (float)(ig[i] - ig_ofst[i]) / 32768.;
+  }
+/*
+  for(int i=0; i<block_size - 1; i++){
+	  imu_yaw_src[i] = imu_yaw_src[i+1];
+  }
+  imu_yaw_src[block_size - 1] = fg[2];
+  arm_fir_f32(&fir_struct, imu_yaw_src, imu_yaw_dst, block_size);
+*/
+/*
+  Madgwick_updateIMU(fg[0], fg[1], imu_yaw_dst[block_size - 1],
+		  fa[0], fa[1], fa[2]);
+*/
+  // 30usec for calculation
+  Madgwick_updateIMU(fg[0], fg[1], fg[2],
+		  fa[0], fa[1], fa[2]);
+  IMU_reflesh();
+}
 
 bool set_duty(int32_t argc,int32_t* argv){
 	if(argc != 2){
@@ -810,6 +988,7 @@ bool get_pose(int32_t argc, int32_t* argv){
 	ir = r;
 	ip = p;
 	iy = y;
+	xprintf("Yaw : %7d\r\n", (int32_t)(imu_yaw_dst[block_size - 1] * 1000.));
 	xprintf("Pose : %4d.%03d %4d.%03d %4d.%03d\r\n",
 			ir, abs((int32_t)((r - ir) * 1000)),
 			ip, abs((int32_t)((p - ip) * 1000)),

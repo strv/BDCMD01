@@ -36,13 +36,12 @@
   /* Includes ------------------------------------------------------------------*/
 
 /* USER CODE BEGIN Includes */
-
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
-#define PWM1_Period 1800
+#define PWM1_Period 1600
 #define PWM1_DeadTime 8
-#define PWM2_Period 1800
+#define PWM2_Period 1600
 #define PWM2_DeadTime 8
 #define TC_Period (72000/15)
 #define SC_Period (72000/3)
@@ -62,6 +61,9 @@
 #define MD_EN1_Pin GPIO_PIN_3
 #define MD_EN1_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
+void pose_init();
+void pose_zero_yaw();
+void pose_proc();
 
 /* USER CODE END Private defines */
 
