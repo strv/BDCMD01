@@ -119,7 +119,6 @@ static HAL_StatusTypeDef cmd_read(uint8_t reg, uint8_t* pbuf, uint16_t len){
 		xputs("\r\n");
 	}
 */
-	/*
 	reg |= 0x80;
 	status = HAL_SPI_Transmit(phspi, &reg, 1, SPI_TO);
 	if(status != HAL_OK){
@@ -137,7 +136,6 @@ static HAL_StatusTypeDef cmd_read(uint8_t reg, uint8_t* pbuf, uint16_t len){
 		}
 		xputs("\r\n");
 	}
-	*/
 	negate();
 	return status;
 }
