@@ -39,13 +39,12 @@
 
 /* USER CODE BEGIN 0 */
 #include "arm_math.h"
+#include "dac.h"
 
 static uint16_t adc1[ADC_BUF_LEN * ADC1_CH_NUM];
 static uint16_t adc2[ADC_BUF_LEN * ADC2_CH_NUM];
 static uint16_t adc3[ADC_BUF_LEN * ADC3_CH_NUM];
 static uint16_t adc4[ADC_BUF_LEN * ADC4_CH_NUM];
-static int32_t temp1[ADC_BUF_LEN];
-static int32_t temp2[ADC_BUF_LEN];
 static int32_t cur_offset[2] = {};
 static bool do_cur_long_cal = false;
 static int32_t cur_reverse[2] = {1, 1};
@@ -488,13 +487,14 @@ void adc_start(void){
     HAL_ADC_Start_DMA(&hadc4, (uint32_t*)adc4, sizeof(adc4)/sizeof(adc4[0]) );
 }
 
-uint32_t adc_get(ADC_CH ch){
+int32_t adc_get(ADC_CH ch){
 	uint32_t i;
 	uint32_t i_end;
-	uint32_t ret_val = 0;
+	int32_t ret_val = 0;
 	uint16_t* p_buf;
 	uint32_t offset = 0;
 	uint32_t tick = 1;
+	int32_t buf_num = 0;
 
 	switch(ch){
 	case ADC_TEMP:
@@ -559,24 +559,43 @@ uint32_t adc_get(ADC_CH ch){
 
 	for(i = offset; i < i_end; i += tick){
 		ret_val += *(p_buf + i);
+		buf_num++;
 	}
-
-	return ret_val * (1 << ADC_Q) / ((i_end - offset) / tick);
+	ret_val = (ret_val << ADC_Q) / buf_num;
+/*
+	for(i = offset; i < i_end; i += tick){
+		ret_val += *(p_buf + i) << ADC_Q;
+		buf_num++;
+	}
+	dac_set_mv(0, 2000);
+	ret_val = ret_val / buf_num;
+*/
+	return ret_val;
 }
 
 int32_t adc_vbatt(void){
-	return (int64_t)adc_get(ADC_VB) * 3300LL * 19LL / 4095 / (1 << ADC_Q);
+	// (int64_t)adc_get(ADC_VB) * 3300LL * 19LL / 4095 / (1 << ADC_Q)
+	return (adc_get(ADC_VB) * 4180 / 273) >> ADC_Q;
 }
 
 int32_t adc_cur1(void){
 	int32_t i;
-	i = ((int64_t)adc_get(ADC_CUR1) - (int64_t)cur_offset[0]) * 3300LL * 1000LL / 4095 / (1 << ADC_Q) / ADC_CUR_GAIN;
+	//i = ((int64_t)adc_get(ADC_CUR1) - (int64_t)cur_offset[0]) * 3300LL * 1000LL / 4095 / (1 << ADC_Q) / ADC_CUR_GAIN;
+	//i = ((((adc_get(ADC_CUR1) - cur_offset[0]) / ADC_CUR_GAIN) * 3300) / 4095) * 1000 / (1 << ADC_Q);
+	i = (adc_get(ADC_CUR1) - cur_offset[0]) * 1375 / 39312;
 	return -i;
 }
 
 int32_t adc_cur2(void){
 	int32_t i;
-	i = ((int64_t)adc_get(ADC_CUR2) - (int64_t)cur_offset[1]) * 3300LL * 1000LL / 4095 / (1 << ADC_Q) / ADC_CUR_GAIN;
+	// 8.6usec
+	//i = ((int64_t)adc_get(ADC_CUR2) - (int64_t)cur_offset[1]) * 3300LL * 1000LL / 4095 / (1 << ADC_Q) / ADC_CUR_GAIN;
+
+	// 6.8usec
+	//i = ((((adc_get(ADC_CUR2) - cur_offset[1]) / ADC_CUR_GAIN) * 3300) / 4095) * 1000 / (1 << ADC_Q);
+
+	// 6.2usec
+	i = (adc_get(ADC_CUR2) - cur_offset[1]) * 1375 / 39312;
 	return -i;
 }
 

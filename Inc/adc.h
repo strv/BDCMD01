@@ -53,7 +53,8 @@ extern ADC_HandleTypeDef hadc3;
 extern ADC_HandleTypeDef hadc4;
 
 /* USER CODE BEGIN Private defines */
-#define ADC_BUF_LEN (48)
+//#define ADC_BUF_LEN (48)	// for 72MHz ADC clock
+#define ADC_BUF_LEN (24)	// for 36MHz ADC clock
 #define ADC1_CH_NUM	(2)
 #define ADC2_CH_NUM	(1)
 #define ADC3_CH_NUM	(1)
@@ -86,7 +87,7 @@ void MX_ADC4_Init(void);
 /* USER CODE BEGIN Prototypes */
 HAL_StatusTypeDef adc_start_cal(void);
 void adc_start(void);
-uint32_t adc_get(ADC_CH ch);
+int32_t adc_get(ADC_CH ch);
 int32_t adc_vbatt(void);
 int32_t adc_cur1(void);
 int32_t adc_cur2(void);
