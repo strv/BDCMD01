@@ -25,6 +25,7 @@ static int32_t next_ccr[2] = {};
 static int32_t pres_vb;
 static int32_t vcmd_target[2] = {};
 static int32_t vcmd_tick[2] = {0, 0};
+static bool inited = false;
 
 void pwm_enable(void){
 	pwm_set_duty(MD_CH12, 0);
@@ -33,9 +34,13 @@ void pwm_enable(void){
 	HAL_Delay(10);
 	HAL_GPIO_WritePin(MD_EN1_GPIO_Port, MD_EN1_Pin , GPIO_PIN_SET);
 	HAL_GPIO_WritePin(MD_EN2_GPIO_Port, MD_EN2_Pin , GPIO_PIN_SET);
+
+	inited = true;
 }
 
 void pwm_disable(void){
+	inited = false;
+
 	HAL_GPIO_WritePin(MD_EN1_GPIO_Port, MD_EN1_Pin , GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(MD_EN2_GPIO_Port, MD_EN2_Pin , GPIO_PIN_RESET);
 }
@@ -95,26 +100,33 @@ void pwm_set_mode(MD_CH ch, PWM_MODE mode){
 	}
 }
 
+void pwm_update_vb(void){
+	if(!inited){
+		return;
+	}
+	pres_vb = adc_vbatt();
+}
+
 static int32_t ccr_tmp1 = 0;
 void PWM1_IRQ_Handler(void){
 	if(PWM1_TIM->SR & TIM_SR_UIF_Msk){
 		vcmd_interval_cnt[0] += vcmd_tick[0];
 		if(vcmd_interval_cnt[0] >= Vcmd_interval){
 			vcmd_interval_cnt[0] = 0;
-			pres_vb = adc_vbatt();
-			ccr_tmp1 = vcmd_target[0] * (PWM1_Period - PWM1_DT_OFST) / pres_vb + PWM1_DT_OFST;
+			ccr_tmp1 = vcmd_target[0] * (PWM1_Period - PWM1_DT_OFST) / pres_vb;
+			if(ccr_tmp1 < 0){
+				ccr_tmp1 = -ccr_tmp1;
+			}
+			ccr_tmp1 += PWM1_DT_OFST;
 			if(ccr_tmp1 > Pwm1_ccr_max){
 				ccr_tmp1 = Pwm1_ccr_max;
-			}
-			if(ccr_tmp1 < -Pwm1_ccr_max){
-				ccr_tmp1 = -Pwm1_ccr_max;
 			}
 			if(vcmd_target[0] > 0){
 				setCCR_1A(ccr_tmp1);
 				setCCR_1B(0);
 			}else if(vcmd_target[0] < 0){
 				setCCR_1A(0);
-				setCCR_1B(-ccr_tmp1);
+				setCCR_1B(ccr_tmp1);
 			}else{
 				setCCR_1A(0);
 				setCCR_1B(0);
@@ -130,19 +142,19 @@ void PWM2_IRQ_Handler(void){
 		vcmd_interval_cnt[1] += vcmd_tick[1];
 		if(vcmd_interval_cnt[1] >= Vcmd_interval){
 			vcmd_interval_cnt[1] = 0;
-			pres_vb = adc_vbatt();
-			ccr_tmp2 = vcmd_target[1] * (PWM2_Period - PWM2_DT_OFST) / pres_vb + PWM2_DT_OFST;
+			ccr_tmp2 = vcmd_target[1] * (PWM2_Period - PWM2_DT_OFST) / pres_vb;
+			if(ccr_tmp2 < 0){
+				ccr_tmp2 = -ccr_tmp2;
+			}
+			ccr_tmp2 += PWM2_DT_OFST;
 			if(ccr_tmp2 > Pwm2_ccr_max){
 				ccr_tmp2 = Pwm2_ccr_max;
-			}
-			if(ccr_tmp2 < -Pwm2_ccr_max){
-				ccr_tmp2 = -Pwm2_ccr_max;
 			}
 			if(vcmd_target[1] > 0){
 				setCCR_2A(0);
 				setCCR_2B(ccr_tmp2);
 			}else if(vcmd_target[1] < 0){
-				setCCR_2A(-ccr_tmp2);
+				setCCR_2A(ccr_tmp2);
 				setCCR_2B(0);
 			}else{
 				setCCR_2A(0);
